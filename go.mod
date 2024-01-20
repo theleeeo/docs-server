@@ -1,4 +1,4 @@
-module test
+module github.com/TheLeeeo/docs-server
 
 go 1.21.3
 
