@@ -32,10 +32,7 @@ function handleVersionSelect() {
                 button.innerHTML = role;
 
                 button.onclick = function () {
-                    content = document.getElementById('document-content')
-                    content.innerHTML = '';
-                    
-                    Redoc.init(`/docs/${version}/${role}.swagger.json`, {}, content);
+                    window.location.href = `/${version}/${role}`;
                 };
 
                 buttonContainer.appendChild(button);
