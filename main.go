@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"slices"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,7 +24,12 @@ func main() {
 	app.Get("/versions", getVersions)
 	app.Get("/version/:version/roles", getRoles)
 
-	app.Listen(":3000")
+	addr := os.Getenv("ADDR")
+	if addr == "" {
+		addr = "localhost:3000"
+	}
+
+	app.Listen(addr)
 }
 
 func getIndexfunc(c *fiber.Ctx) error {

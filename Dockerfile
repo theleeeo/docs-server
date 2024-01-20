@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app. Adjust the CGO_ENABLED and GOOS as needed.
-RUN CGO_ENABLED=0 go build -a -o app .
+RUN CGO_ENABLED=0 go build -o app .
 
 # Second stage: create the runtime image.
 FROM alpine:latest  
@@ -24,6 +24,9 @@ WORKDIR /root/
 
 # Copy the binary from the builder stage.
 COPY --from=builder /app/app .
+
+COPY public public
+COPY views views
 
 # Command to run the executable.
 CMD ["./app"]
