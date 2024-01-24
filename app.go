@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/TheLeeeo/docs-server/server"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
+	"github.com/theleeeo/docs-server/server"
 )
 
 func NewApp(s *server.Server) *fiber.App {

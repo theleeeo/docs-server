@@ -1,4 +1,4 @@
-module github.com/TheLeeeo/docs-server
+module github.com/theleeeo/docs-server
 
 go 1.21.3
 
@@ -6,6 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/template/html/v2 v2.1.0
 	github.com/google/go-github/v58 v58.0.0
+	github.com/theleeeo/leolog v0.0.0-20240124214102-5723ebde1536
 )
 
 require (

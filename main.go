@@ -11,13 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/TheLeeeo/docs-server/provider"
-	"github.com/TheLeeeo/docs-server/server"
 	"github.com/gofiber/fiber/v2"
+	"github.com/theleeeo/docs-server/provider"
+	"github.com/theleeeo/docs-server/server"
+	"github.com/theleeeo/leolog"
 )
 
 func loadConfig() (*server.Config, error) {
-	pollInterval, err := parsePollInterval(os.Getenv("POLL_INTERVAL"))
+	pollInterval, err := parseInterval(os.Getenv("POLL_INTERVAL"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse poll interval: %w", err)
 	}
@@ -31,7 +32,7 @@ func loadConfig() (*server.Config, error) {
 	}, nil
 }
 
-func parsePollInterval(s string) (time.Duration, error) {
+func parseInterval(s string) (time.Duration, error) {
 	if s == "" {
 		return 0, nil
 	}
@@ -45,6 +46,9 @@ func parsePollInterval(s string) (time.Duration, error) {
 }
 
 func main() {
+	logger := slog.New(leolog.NewHandler(nil))
+	slog.SetDefault(logger)
+
 	serverConfig, err := loadConfig()
 	if err != nil {
 		panic(err)
@@ -114,8 +118,6 @@ func startApp(ctx context.Context, app *fiber.App, addr string, wg *sync.WaitGro
 
 		<-ctx.Done()
 
-		log.Println("shutting down app...")
-
 		if err := app.Shutdown(); err != nil {
 			log.Printf("failed to shutdown app: %v", err)
 		}
@@ -130,7 +132,5 @@ func startServer(ctx context.Context, s *server.Server, wg *sync.WaitGroup, errC
 		if err := s.Run(ctx); err != nil {
 			errChan <- err
 		}
-
-		log.Println("shut down server")
 	}()
 }
