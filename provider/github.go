@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"github.com/google/go-github/v58/github"
@@ -47,8 +46,6 @@ func (c *githubProvider) ListFiles(ctx context.Context, tag, path string) ([]str
 	for _, entry := range tree.Entries {
 		if *entry.Type == "blob" && strings.HasPrefix(*entry.Path, path) {
 			files = append(files, *entry.Path)
-		} else {
-			log.Printf("Skipping %s", *entry.Path)
 		}
 	}
 

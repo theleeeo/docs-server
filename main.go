@@ -3,11 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"log/slog"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/TheLeeeo/docs-server/provider"
 	"github.com/TheLeeeo/docs-server/server"
+	"github.com/gofiber/fiber/v2"
 )
 
 func loadConfig() (*server.Config, error) {
@@ -58,16 +64,73 @@ func main() {
 		addr = "localhost:3000"
 	}
 
+	var termChan = make(chan os.Signal, 1)
+	var appErrChan = make(chan error, 1)
+	var serverErrChan = make(chan error, 1)
+	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	wg := &sync.WaitGroup{}
+
+	startApp(ctx, app, addr, wg, appErrChan)
+	startServer(ctx, s, wg, serverErrChan)
+
+	select {
+	case <-termChan:
+		log.Println("shutting down...")
+
+		go func() {
+			<-termChan
+			log.Println("force killing...")
+			os.Exit(1)
+		}()
+
+		cancel()
+
+	case err := <-appErrChan:
+		slog.Error("the app encountered an error", "error", err.Error())
+		cancel()
+	case err := <-serverErrChan:
+		slog.Error("the server encountered an error", "error", err.Error())
+		cancel()
+	}
+
+	wg.Wait()
+}
+
+func startApp(ctx context.Context, app *fiber.App, addr string, wg *sync.WaitGroup, errChan chan<- error) {
 	go func() {
+		wg.Add(1)
+
 		if err := app.Listen(addr); err != nil {
-			panic(err)
+			errChan <- err
 		}
 	}()
 
-	if err := s.Run(context.TODO()); err != nil {
-		panic(err)
-	}
+	go func() {
+		// The waitgroup is freed here because the app.Listen() can finish before the app.Shutdown() is completed.
+		defer wg.Done()
 
-	app.Shutdown()
+		<-ctx.Done()
 
+		log.Println("shutting down app...")
+
+		if err := app.Shutdown(); err != nil {
+			log.Printf("failed to shutdown app: %v", err)
+		}
+	}()
+}
+
+func startServer(ctx context.Context, s *server.Server, wg *sync.WaitGroup, errChan chan<- error) {
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
+		if err := s.Run(ctx); err != nil {
+			errChan <- err
+		}
+
+		log.Println("shut down server")
+	}()
 }
