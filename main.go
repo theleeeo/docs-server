@@ -1,77 +1,73 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"os"
-	"slices"
+	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html/v2"
+	"github.com/TheLeeeo/docs-server/provider"
+	"github.com/TheLeeeo/docs-server/server"
 )
 
+func loadConfig() (*server.Config, error) {
+	pollInterval, err := parsePollInterval(os.Getenv("POLL_INTERVAL"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse poll interval: %w", err)
+	}
+
+	return &server.Config{
+		Owner:        os.Getenv("OWNER"),
+		Repo:         os.Getenv("REPO"),
+		PathPrefix:   os.Getenv("PATH_PREFIX"),
+		FileSuffix:   os.Getenv("FILE_SUFFIX"),
+		PollInterval: pollInterval,
+	}, nil
+}
+
+func parsePollInterval(s string) (time.Duration, error) {
+	if s == "" {
+		return 0, nil
+	}
+
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return 0, err
+	}
+
+	return d, nil
+}
+
 func main() {
-	engine := html.New("./views", ".html")
-	app := fiber.New(fiber.Config{
-		Views: engine,
-	})
+	serverConfig, err := loadConfig()
+	if err != nil {
+		panic(err)
+	}
 
-	// Serve static files
-	app.Static("/docs", "./docs")
-	app.Static("/", "./public")
+	ghClient := provider.NewGithub(serverConfig.Owner, serverConfig.Repo)
 
-	app.Get("/", getIndexfunc)
-	app.Get("/:version/:role", getDoc)
+	s, err := server.New(serverConfig, ghClient)
+	if err != nil {
+		panic(err)
+	}
 
-	app.Get("/versions", getVersions)
-	app.Get("/version/:version/roles", getRoles)
+	app := NewApp(s)
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		addr = "localhost:3000"
 	}
 
-	app.Listen(addr)
-}
+	go func() {
+		if err := app.Listen(addr); err != nil {
+			panic(err)
+		}
+	}()
 
-func getIndexfunc(c *fiber.Ctx) error {
-	return c.Render("version-select", fiber.Map{}, "layouts/main")
-}
-
-func getDoc(c *fiber.Ctx) error {
-	version := c.Params("version")
-	role := c.Params("role")
-
-	roles, ok := roles[version]
-	if !ok {
-		return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
+	if err := s.Run(context.TODO()); err != nil {
+		panic(err)
 	}
 
-	ok = slices.Contains(roles, role)
-	if !ok {
-		return c.Status(fiber.StatusNotFound).SendString("404 Role Not Found")
-	}
+	app.Shutdown()
 
-	return c.Render("doc", fiber.Map{
-		"Url": "/docs/" + version + "/" + role + ".swagger.json",
-	}, "layouts/main")
-}
-
-var roles = map[string][]string{
-	"1": {"SP", "INTERNAL", "OPERATOR"},
-	"2": {"SP", "INTERNAL"},
-}
-
-func getRoles(c *fiber.Ctx) error {
-	version := c.Params("version")
-	roleList, ok := roles[version]
-	if !ok {
-		return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
-	}
-
-	return c.JSON(roleList)
-}
-
-func getVersions(c *fiber.Ctx) error {
-	// Fetch button data from backend
-	versions := []string{"1", "2"}
-	return c.JSON(versions)
 }
