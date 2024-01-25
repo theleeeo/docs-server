@@ -20,7 +20,7 @@ func NewApp(s *server.Server) *fiber.App {
 	app.Static("/docs", "./docs")
 	app.Static("/", "./public")
 
-	app.Get("/", getIndex)
+	app.Get("/", createGetIndexHandler(s))
 	app.Get("/:version/:role", createRenderDocHandler(s))
 
 	app.Get("/versions", createGetVersionsHandler(s))
@@ -29,8 +29,12 @@ func NewApp(s *server.Server) *fiber.App {
 	return app
 }
 
-func getIndex(c *fiber.Ctx) error {
-	return c.Render("version-select", fiber.Map{}, "layouts/main")
+func createGetIndexHandler(s *server.Server) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		return c.Render("version-select", fiber.Map{
+			"CompanyName": s.CompanyName(),
+		}, "layouts/main")
+	}
 }
 
 func createRenderDocHandler(s *server.Server) func(c *fiber.Ctx) error {
@@ -49,10 +53,11 @@ func createRenderDocHandler(s *server.Server) func(c *fiber.Ctx) error {
 		}
 
 		return c.Render("doc", fiber.Map{
-			"Owner": s.Owner(),
-			"Repo":  s.Repo(),
-			"Path":  fmt.Sprintf("%s%s%s", s.Path(), role, s.FileSuffix()),
-			"Ref":   version,
+			"Owner":       s.Owner(),
+			"Repo":        s.Repo(),
+			"Path":        fmt.Sprintf("%s%s%s", s.Path(), role, s.FileSuffix()),
+			"Ref":         version,
+			"CompanyName": s.CompanyName(),
 		}, "layouts/main")
 	}
 }

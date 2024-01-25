@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	defaultAddr         = "localhost:4444"
 	defaultPollInterval = 15 * time.Minute
 )
 
@@ -34,7 +33,13 @@ func validateConfig(cfg *Config) error {
 		return ErrMissingRepo
 	}
 
+	if cfg.CompanyName == "" {
+		slog.Info("No company name set, using owner as company name", "Owner", cfg.Owner)
+		cfg.CompanyName = cfg.Owner
+	}
+
 	if cfg.PollInterval == 0 {
+		slog.Info("No poll interval set, using default", "Default", defaultPollInterval)
 		cfg.PollInterval = defaultPollInterval
 	}
 
@@ -90,6 +95,10 @@ func (s *Server) Path() string {
 
 func (s *Server) FileSuffix() string {
 	return s.cfg.FileSuffix
+}
+
+func (s *Server) CompanyName() string {
+	return s.cfg.CompanyName
 }
 
 func (s *Server) Run(ctx context.Context) error {

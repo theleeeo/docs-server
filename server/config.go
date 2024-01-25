@@ -6,6 +6,8 @@ type Config struct {
 	Owner string
 	Repo  string
 
+	CompanyName string
+
 	PathPrefix string
 	FileSuffix string
 

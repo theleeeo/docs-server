@@ -25,6 +25,7 @@ func loadConfig() (*server.Config, error) {
 	return &server.Config{
 		Owner:        os.Getenv("OWNER"),
 		Repo:         os.Getenv("REPO"),
+		CompanyName:  os.Getenv("COMPANY_NAME"),
 		PathPrefix:   os.Getenv("PATH_PREFIX"),
 		FileSuffix:   os.Getenv("FILE_SUFFIX"),
 		PollInterval: pollInterval,
@@ -64,7 +65,7 @@ func main() {
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {
-		addr = "localhost:3000"
+		addr = "localhost:4444"
 	}
 
 	var termChan = make(chan os.Signal, 1)
