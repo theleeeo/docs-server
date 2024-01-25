@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -82,11 +81,11 @@ func main() {
 
 	select {
 	case <-termChan:
-		log.Println("shutting down...")
+		slog.Info("shutting down...")
 
 		go func() {
 			<-termChan
-			log.Println("force killing...")
+			slog.Info("force killing...")
 			os.Exit(1)
 		}()
 
@@ -107,6 +106,7 @@ func startApp(ctx context.Context, app *fiber.App, addr string, wg *sync.WaitGro
 	go func() {
 		wg.Add(1)
 
+		slog.Info("starting app", "addr", addr)
 		if err := app.Listen(addr); err != nil {
 			errChan <- err
 		}
@@ -119,7 +119,7 @@ func startApp(ctx context.Context, app *fiber.App, addr string, wg *sync.WaitGro
 		<-ctx.Done()
 
 		if err := app.Shutdown(); err != nil {
-			log.Printf("failed to shutdown app: %v", err)
+			slog.Error("failed to shutdown app", "error", err)
 		}
 	}()
 }
@@ -129,6 +129,7 @@ func startServer(ctx context.Context, s *server.Server, wg *sync.WaitGroup, errC
 		wg.Add(1)
 		defer wg.Done()
 
+		slog.Info("starting server")
 		if err := s.Run(ctx); err != nil {
 			errChan <- err
 		}

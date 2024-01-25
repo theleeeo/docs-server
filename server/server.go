@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
 )
 
 var (
-	defaultAddr         = "localhost:3000"
+	defaultAddr         = "localhost:4444"
 	defaultPollInterval = 15 * time.Minute
 )
 
@@ -39,7 +39,7 @@ func validateConfig(cfg *Config) error {
 	}
 
 	if cfg.PathPrefix != "" && !strings.HasSuffix(cfg.PathPrefix, "/") {
-		log.Printf("Path %s does not end with a slash, appending one\n", cfg.PathPrefix)
+		slog.Info("Path does not end with a slash, appending one", "Path", cfg.PathPrefix)
 		cfg.PathPrefix += "/"
 	}
 
