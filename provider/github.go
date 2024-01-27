@@ -11,16 +11,10 @@ import (
 type githubProvider struct {
 	owner  string
 	repo   string
-	token  string
 	client *github.Client
 }
 
-func NewGithub(owner, repo, token string) (*githubProvider, error) {
-	cl := github.NewClient(nil)
-	if token != "" {
-		cl = cl.WithAuthToken(token)
-	}
-
+func NewGithub(owner, repo string) (*githubProvider, error) {
 	if owner == "" {
 		return nil, fmt.Errorf("owner cannot be empty")
 	}
@@ -32,8 +26,7 @@ func NewGithub(owner, repo, token string) (*githubProvider, error) {
 	return &githubProvider{
 		owner:  owner,
 		repo:   repo,
-		token:  token,
-		client: cl,
+		client: github.NewClient(nil),
 	}, nil
 }
 

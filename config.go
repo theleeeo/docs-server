@@ -12,7 +12,6 @@ type Config struct {
 		Github struct {
 			Owner string `yaml:"owner"`
 			Repo  string `yaml:"repo"`
-			Token string `yaml:"token"`
 		} `yaml:"github"`
 	} `yaml:"provider"`
 

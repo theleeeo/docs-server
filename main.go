@@ -42,7 +42,7 @@ func main() {
 		return
 	}
 
-	ghClient, err := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo, cfg.Provider.Github.Token)
+	ghClient, err := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo)
 	if err != nil {
 		color.Red("failed to create github provider: %s", err)
 		return
