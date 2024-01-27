@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/theleeeo/docs-server/app"
 	"github.com/theleeeo/docs-server/provider"
@@ -66,6 +65,8 @@ func main() {
 	}
 
 	app, err := app.New(&app.Config{
+		Address:     cfg.App.Address,
+		RootUrl:     cfg.App.RootUrl,
 		CompanyName: cfg.Design.CompanyName,
 		CompanyLogo: cfg.Design.CompanyLogo,
 	}, s)
@@ -75,16 +76,31 @@ func main() {
 	}
 
 	var termChan = make(chan os.Signal, 1)
+	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
 	var appErrChan = make(chan error, 1)
 	var serverErrChan = make(chan error, 1)
-	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	wg := &sync.WaitGroup{}
 
-	startApp(ctx, app, cfg.Addr, wg, appErrChan)
-	startServer(ctx, s, wg, serverErrChan)
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
+		if err := app.Run(ctx); err != nil {
+			appErrChan <- err
+		}
+	}()
+
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
+		if err := s.Run(ctx); err != nil {
+			serverErrChan <- err
+		}
+	}()
 
 	select {
 	case <-termChan:
@@ -97,7 +113,6 @@ func main() {
 		}()
 
 		cancel()
-
 	case err := <-appErrChan:
 		slog.Error("the app encountered an error", "error", err.Error())
 		cancel()
@@ -107,38 +122,4 @@ func main() {
 	}
 
 	wg.Wait()
-}
-
-func startApp(ctx context.Context, app *fiber.App, addr string, wg *sync.WaitGroup, errChan chan<- error) {
-	go func() {
-		wg.Add(1)
-
-		slog.Info("starting app", "addr", addr)
-		if err := app.Listen(addr); err != nil {
-			errChan <- err
-		}
-	}()
-
-	go func() {
-		// The waitgroup is freed here because the app.Listen() can finish before the app.Shutdown() is completed.
-		defer wg.Done()
-
-		<-ctx.Done()
-
-		if err := app.Shutdown(); err != nil {
-			slog.Error("failed to shutdown app", "error", err)
-		}
-	}()
-}
-
-func startServer(ctx context.Context, s *server.Server, wg *sync.WaitGroup, errChan chan<- error) {
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-
-		slog.Info("starting server")
-		if err := s.Run(ctx); err != nil {
-			errChan <- err
-		}
-	}()
 }

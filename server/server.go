@@ -73,6 +73,8 @@ func (s *Server) FileSuffix() string {
 }
 
 func (s *Server) Run(ctx context.Context) error {
+	slog.Info("starting server")
+
 	if err := s.Poll(); err != nil {
 		return err
 	}

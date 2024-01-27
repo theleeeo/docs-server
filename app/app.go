@@ -1,10 +1,12 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"slices"
 
@@ -16,43 +18,15 @@ import (
 const (
 	// staticPath is the path to the static files
 	staticFilesPath = "./public"
+	defaultAddress  = "localhost:4444"
+	defaultLogo     = "/favicon.ico"
 )
 
-func New(cfg *Config, s *server.Server) (*fiber.App, error) {
-	engine := html.New("./views", ".html")
-	app := fiber.New(fiber.Config{
-		Views:   engine,
-		GETOnly: true,
-	})
-
-	// Load company logo
-	logo, err := getCompanyLogo(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return c.Send(logo)
-	})
-
-	// Serve static files
-	app.Static("/docs", "./docs")
-	app.Static("/", staticFilesPath)
-
-	app.Get("/", createGetIndexHandler(cfg, s))
-	app.Get("/:version/:role", createRenderDocHandler(cfg, s))
-
-	app.Get("/versions", createGetVersionsHandler(s))
-	app.Get("/version/:version/roles", createGetRolesHandler(s))
-
-	return app, nil
-}
-
-func getCompanyLogo(cfg *Config) ([]byte, error) {
+func getCompanyLogo(location string) ([]byte, error) {
 	// Check if CompanyLogo is a file
 	slog.Debug("Checking if CompanyLogo is a file")
 	// Prepend "public/" to the path because that's where the static files are
-	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", cfg.CompanyLogo))
+	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", location))
 	if err == nil {
 		slog.Info("Company logo loaded from file")
 		defer file.Close()
@@ -65,7 +39,7 @@ func getCompanyLogo(cfg *Config) ([]byte, error) {
 
 	// If CompanyLogo is not a file, assume it's a URL and make an HTTP request
 	slog.Debug("Checking if CompanyLogo is a URL")
-	resp, err := http.Get(cfg.CompanyLogo)
+	resp, err := http.Get(location)
 	if err != nil {
 		return nil, err
 	}
@@ -75,56 +49,148 @@ func getCompanyLogo(cfg *Config) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func createGetIndexHandler(cfg *Config, s *server.Server) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		return c.Render("version-select", fiber.Map{
-			"CompanyName": cfg.CompanyName,
-			"CompanyLogo": cfg.CompanyLogo,
-		}, "layouts/main")
+func registerHandlers(a *App) {
+	a.fiberApp.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		return c.Send(a.logo)
+	})
+
+	// Serve static files
+	a.fiberApp.Static("/docs", "./docs")
+	a.fiberApp.Static("/", staticFilesPath)
+
+	a.fiberApp.Get("/", a.getIndexHandler)
+	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
+
+	a.fiberApp.Get("/versions", a.getVersionsHandler)
+	a.fiberApp.Get("/version/:version/roles", a.getRolesHandler)
+}
+
+func validateConfig(cfg *Config) error {
+	if cfg.Address == "" {
+		slog.Info("No address set, using default", "Default", defaultAddress)
+		cfg.Address = defaultAddress
+	}
+
+	if cfg.RootUrl == "" {
+		return fmt.Errorf("root url is required")
+	}
+
+	rootUrl, err := url.Parse(cfg.RootUrl)
+	if err != nil {
+		return fmt.Errorf("invalid root url: %w", err)
+	}
+	rootUrl.Scheme = "http"
+	cfg.RootUrl = rootUrl.String()
+
+	if cfg.CompanyName == "" {
+		return fmt.Errorf("company name is required")
+	}
+
+	if cfg.CompanyLogo == "" {
+		slog.Info("No company logo set, using default", "Default", defaultLogo)
+		cfg.CompanyLogo = defaultLogo
+	}
+
+	return nil
+}
+
+type App struct {
+	fiberApp *fiber.App
+
+	cfg  *Config
+	serv *server.Server
+
+	logo []byte
+}
+
+func New(cfg *Config, s *server.Server) (*App, error) {
+	if err := validateConfig(cfg); err != nil {
+		return nil, err
+	}
+
+	a := &App{
+		fiberApp: fiber.New(fiber.Config{
+			Views:   html.New("./views", ".html"),
+			GETOnly: true,
+		}),
+
+		cfg:  cfg,
+		serv: s,
+	}
+
+	// Load company logo
+	logo, err := getCompanyLogo(a.cfg.CompanyLogo)
+	if err != nil {
+		return nil, err
+	}
+	a.logo = logo
+
+	registerHandlers(a)
+
+	return a, nil
+}
+
+func (a *App) Run(ctx context.Context) error {
+	errChan := make(chan error)
+	go func() {
+		slog.Info("starting app", "addr", a.cfg.Address)
+		if err := a.fiberApp.Listen(a.cfg.Address); err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		if err := a.fiberApp.Shutdown(); err != nil {
+			slog.Error("failed to shutdown app", "error", err)
+		}
+		return nil
+	case err := <-errChan:
+		return err
 	}
 }
 
-func createRenderDocHandler(cfg *Config, s *server.Server) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		version := c.Params("version")
-		role := c.Params("role")
-
-		doc := s.GetVersion(version)
-		if doc == nil {
-			return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
-		}
-
-		ok := slices.Contains(doc.Files, role)
-		if !ok {
-			return c.Status(fiber.StatusNotFound).SendString("404 Role Not Found")
-		}
-
-		return c.Render("doc", fiber.Map{
-			"Owner":       "LeoCorp", //s.Owner(),
-			"Repo":        "LeoRepo", //s.Repo(),
-			"Path":        fmt.Sprintf("%s%s%s", s.Path(), role, s.FileSuffix()),
-			"Ref":         version,
-			"CompanyName": cfg.CompanyName,
-			"CompanyLogo": cfg.CompanyLogo,
-		}, "layouts/main")
-	}
+func (a *App) getIndexHandler(c *fiber.Ctx) error {
+	return c.Render("version-select", fiber.Map{
+		"CompanyName": a.cfg.CompanyName,
+		"CompanyLogo": a.cfg.CompanyLogo,
+	}, "layouts/main")
 }
 
-func createGetVersionsHandler(s *server.Server) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		return c.JSON(s.GetVersions())
+func (a *App) renderDocHandler(c *fiber.Ctx) error {
+	version := c.Params("version")
+	role := c.Params("role")
+
+	doc := a.serv.GetVersion(version)
+	if doc == nil {
+		return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
 	}
+
+	ok := slices.Contains(doc.Files, role)
+	if !ok {
+		return c.Status(fiber.StatusNotFound).SendString("404 Role Not Found")
+	}
+
+	return c.Render("doc", fiber.Map{
+		"RootUrl":     a.cfg.RootUrl,
+		"Path":        fmt.Sprintf("%s%s%s", a.serv.Path(), role, a.serv.FileSuffix()),
+		"Ref":         version,
+		"CompanyName": a.cfg.CompanyName,
+		"CompanyLogo": a.cfg.CompanyLogo,
+	}, "layouts/main")
 }
 
-func createGetRolesHandler(s *server.Server) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		version := c.Params("version")
+func (a *App) getVersionsHandler(c *fiber.Ctx) error {
+	return c.JSON(a.serv.GetVersions())
+}
 
-		doc := s.GetVersion(version)
-		if doc == nil {
-			return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
-		}
+func (a *App) getRolesHandler(c *fiber.Ctx) error {
+	version := c.Params("version")
 
-		return c.JSON(doc.Files)
+	doc := a.serv.GetVersion(version)
+	if doc == nil {
+		return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
 	}
+
+	return c.JSON(doc.Files)
 }

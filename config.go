@@ -15,7 +15,10 @@ type Config struct {
 		} `yaml:"github"`
 	} `yaml:"provider"`
 
-	Addr string `yaml:"address"`
+	App struct {
+		Address string `yaml:"address"`
+		RootUrl string `yaml:"root_url"`
+	} `yaml:"app"`
 
 	Server struct {
 		PollInterval string `yaml:"poll_interval"`
