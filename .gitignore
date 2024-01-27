@@ -24,3 +24,4 @@ tmp
 docs
 
 .env
+config.yml

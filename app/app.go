@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/theleeeo/docs-server/server"
 )
 
-func NewApp(s *server.Server) *fiber.App {
+func New(cfg *Config, s *server.Server) *fiber.App {
 	engine := html.New("./views", ".html")
 	app := fiber.New(fiber.Config{
 		Views:   engine,
@@ -20,8 +20,8 @@ func NewApp(s *server.Server) *fiber.App {
 	app.Static("/docs", "./docs")
 	app.Static("/", "./public")
 
-	app.Get("/", createGetIndexHandler(s))
-	app.Get("/:version/:role", createRenderDocHandler(s))
+	app.Get("/", createGetIndexHandler(cfg, s))
+	app.Get("/:version/:role", createRenderDocHandler(cfg, s))
 
 	app.Get("/versions", createGetVersionsHandler(s))
 	app.Get("/version/:version/roles", createGetRolesHandler(s))
@@ -29,15 +29,15 @@ func NewApp(s *server.Server) *fiber.App {
 	return app
 }
 
-func createGetIndexHandler(s *server.Server) func(c *fiber.Ctx) error {
+func createGetIndexHandler(cfg *Config, s *server.Server) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		return c.Render("version-select", fiber.Map{
-			"CompanyName": s.CompanyName(),
+			"CompanyName": cfg.CompanyName,
 		}, "layouts/main")
 	}
 }
 
-func createRenderDocHandler(s *server.Server) func(c *fiber.Ctx) error {
+func createRenderDocHandler(cfg *Config, s *server.Server) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		version := c.Params("version")
 		role := c.Params("role")
@@ -53,11 +53,11 @@ func createRenderDocHandler(s *server.Server) func(c *fiber.Ctx) error {
 		}
 
 		return c.Render("doc", fiber.Map{
-			"Owner":       s.Owner(),
-			"Repo":        s.Repo(),
+			"Owner":       "LeoCorp", //s.Owner(),
+			"Repo":        "LeoRepo", //s.Repo(),
 			"Path":        fmt.Sprintf("%s%s%s", s.Path(), role, s.FileSuffix()),
 			"Ref":         version,
-			"CompanyName": s.CompanyName(),
+			"CompanyName": cfg.CompanyName,
 		}, "layouts/main")
 	}
 }

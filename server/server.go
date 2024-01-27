@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -14,30 +13,12 @@ var (
 	defaultPollInterval = 15 * time.Minute
 )
 
-var (
-	ErrMissingOwner = errors.New("missing owner")
-	ErrMissingRepo  = errors.New("missing repo")
-)
-
 type Provider interface {
 	ListVersions(ctx context.Context) ([]string, error)
 	ListFiles(ctx context.Context, version, path string) ([]string, error)
 }
 
 func validateConfig(cfg *Config) error {
-	if cfg.Owner == "" {
-		return ErrMissingOwner
-	}
-
-	if cfg.Repo == "" {
-		return ErrMissingRepo
-	}
-
-	if cfg.CompanyName == "" {
-		slog.Info("No company name set, using owner as company name", "Owner", cfg.Owner)
-		cfg.CompanyName = cfg.Owner
-	}
-
 	if cfg.PollInterval == 0 {
 		slog.Info("No poll interval set, using default", "Default", defaultPollInterval)
 		cfg.PollInterval = defaultPollInterval
@@ -81,24 +62,12 @@ type Documentation struct {
 	Files []string
 }
 
-func (s *Server) Owner() string {
-	return s.cfg.Owner
-}
-
-func (s *Server) Repo() string {
-	return s.cfg.Repo
-}
-
 func (s *Server) Path() string {
 	return s.cfg.PathPrefix
 }
 
 func (s *Server) FileSuffix() string {
 	return s.cfg.FileSuffix
-}
-
-func (s *Server) CompanyName() string {
-	return s.cfg.CompanyName
 }
 
 func (s *Server) Run(ctx context.Context) error {

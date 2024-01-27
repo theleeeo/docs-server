@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,26 +10,11 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/theleeeo/docs-server/app"
 	"github.com/theleeeo/docs-server/provider"
 	"github.com/theleeeo/docs-server/server"
 	"github.com/theleeeo/leolog"
 )
-
-func loadConfig() (*server.Config, error) {
-	pollInterval, err := parseInterval(os.Getenv("POLL_INTERVAL"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse poll interval: %w", err)
-	}
-
-	return &server.Config{
-		Owner:        os.Getenv("OWNER"),
-		Repo:         os.Getenv("REPO"),
-		CompanyName:  os.Getenv("COMPANY_NAME"),
-		PathPrefix:   os.Getenv("PATH_PREFIX"),
-		FileSuffix:   os.Getenv("FILE_SUFFIX"),
-		PollInterval: pollInterval,
-	}, nil
-}
 
 func parseInterval(s string) (time.Duration, error) {
 	if s == "" {
@@ -49,24 +33,32 @@ func main() {
 	logger := slog.New(leolog.NewHandler(nil))
 	slog.SetDefault(logger)
 
-	serverConfig, err := loadConfig()
+	cfg, err := loadConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	ghClient := provider.NewGithub(serverConfig.Owner, serverConfig.Repo)
+	ghClient := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo)
+
+	serverConfig := &server.Config{
+		PathPrefix: cfg.Server.PathPrefix,
+		FileSuffix: cfg.Server.FileSuffix,
+	}
+	interval, err := parseInterval(cfg.Server.PollInterval)
+	if err != nil {
+		panic(err)
+	}
+	serverConfig.PollInterval = interval
 
 	s, err := server.New(serverConfig, ghClient)
 	if err != nil {
 		panic(err)
 	}
 
-	app := NewApp(s)
-
-	addr := os.Getenv("ADDR")
-	if addr == "" {
-		addr = "localhost:4444"
-	}
+	app := app.New(&app.Config{
+		CompanyName: cfg.Design.CompanyName,
+		CompanyLogo: cfg.Design.CompanyLogo,
+	}, s)
 
 	var termChan = make(chan os.Signal, 1)
 	var appErrChan = make(chan error, 1)
@@ -77,7 +69,7 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 
-	startApp(ctx, app, addr, wg, appErrChan)
+	startApp(ctx, app, cfg.Addr, wg, appErrChan)
 	startServer(ctx, s, wg, serverErrChan)
 
 	select {

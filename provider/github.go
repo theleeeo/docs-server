@@ -22,8 +22,8 @@ func NewGithub(owner, repo string) *githubProvider {
 }
 
 // Get the names of all tags in the repository
-func (c *githubProvider) ListVersions(ctx context.Context) ([]string, error) {
-	tags, _, err := c.client.Repositories.ListTags(ctx, c.owner, c.repo, &github.ListOptions{PerPage: 10})
+func (p *githubProvider) ListVersions(ctx context.Context) ([]string, error) {
+	tags, _, err := p.client.Repositories.ListTags(ctx, p.owner, p.repo, &github.ListOptions{PerPage: 10})
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +36,8 @@ func (c *githubProvider) ListVersions(ctx context.Context) ([]string, error) {
 	return versions, nil
 }
 
-func (c *githubProvider) ListFiles(ctx context.Context, tag, path string) ([]string, error) {
-	tree, _, err := c.client.Git.GetTree(ctx, c.owner, c.repo, tag, true)
+func (p *githubProvider) ListFiles(ctx context.Context, tag, path string) ([]string, error) {
+	tree, _, err := p.client.Git.GetTree(ctx, p.owner, p.repo, tag, true)
 	if err != nil {
 		return nil, err
 	}
