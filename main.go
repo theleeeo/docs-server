@@ -11,6 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/theleeeo/docs-server/app"
 	"github.com/theleeeo/docs-server/provider"
 	"github.com/theleeeo/docs-server/server"
@@ -31,7 +32,8 @@ func parseInterval(s string) (time.Duration, error) {
 }
 
 func main() {
-	logger := slog.New(leolog.NewHandler(nil))
+	logger := slog.New(leolog.NewHandler(&slog.HandlerOptions{Level: slog.LevelDebug}))
+	log.SetLevel(log.LevelDebug)
 	slog.SetDefault(logger)
 
 	cfg, err := loadConfig()
@@ -63,10 +65,14 @@ func main() {
 		return
 	}
 
-	app := app.New(&app.Config{
+	app, err := app.New(&app.Config{
 		CompanyName: cfg.Design.CompanyName,
 		CompanyLogo: cfg.Design.CompanyLogo,
 	}, s)
+	if err != nil {
+		color.Red("failed to create app: %s", err)
+		return
+	}
 
 	var termChan = make(chan os.Signal, 1)
 	var appErrChan = make(chan error, 1)
