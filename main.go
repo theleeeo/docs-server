@@ -38,7 +38,7 @@ func main() {
 		panic(err)
 	}
 
-	ghClient := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo)
+	ghClient := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo, cfg.Provider.Github.Token)
 
 	serverConfig := &server.Config{
 		PathPrefix: cfg.Server.PathPrefix,
