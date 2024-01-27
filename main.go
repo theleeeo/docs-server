@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gofiber/fiber/v2"
 	"github.com/theleeeo/docs-server/app"
 	"github.com/theleeeo/docs-server/provider"
@@ -35,10 +36,15 @@ func main() {
 
 	cfg, err := loadConfig()
 	if err != nil {
-		panic(err)
+		color.Red("failed to load config: %s", err)
+		return
 	}
 
-	ghClient := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo, cfg.Provider.Github.Token)
+	ghClient, err := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo, cfg.Provider.Github.Token)
+	if err != nil {
+		color.Red("failed to create github provider: %s", err)
+		return
+	}
 
 	serverConfig := &server.Config{
 		PathPrefix: cfg.Server.PathPrefix,
@@ -46,13 +52,15 @@ func main() {
 	}
 	interval, err := parseInterval(cfg.Server.PollInterval)
 	if err != nil {
-		panic(err)
+		color.Red("failed to parse poll interval: %s", err)
+		return
 	}
 	serverConfig.PollInterval = interval
 
 	s, err := server.New(serverConfig, ghClient)
 	if err != nil {
-		panic(err)
+		color.Red("failed to create server: %s", err)
+		return
 	}
 
 	app := app.New(&app.Config{

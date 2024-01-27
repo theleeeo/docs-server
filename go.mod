@@ -3,6 +3,7 @@ module github.com/theleeeo/docs-server
 go 1.21.3
 
 require (
+	github.com/fatih/color v1.16.0
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/template/html/v2 v2.1.0
 	github.com/google/go-github/v58 v58.0.0

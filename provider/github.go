@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/google/go-github/v58/github"
@@ -14,10 +15,18 @@ type githubProvider struct {
 	client *github.Client
 }
 
-func NewGithub(owner, repo, token string) *githubProvider {
+func NewGithub(owner, repo, token string) (*githubProvider, error) {
 	cl := github.NewClient(nil)
 	if token != "" {
 		cl = cl.WithAuthToken(token)
+	}
+
+	if owner == "" {
+		return nil, fmt.Errorf("owner cannot be empty")
+	}
+
+	if repo == "" {
+		return nil, fmt.Errorf("repo cannot be empty")
 	}
 
 	return &githubProvider{
@@ -25,7 +34,7 @@ func NewGithub(owner, repo, token string) *githubProvider {
 		repo:   repo,
 		token:  token,
 		client: cl,
-	}
+	}, nil
 }
 
 // Get the names of all tags in the repository
