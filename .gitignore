@@ -25,3 +25,6 @@ docs
 
 .env
 config.yml
+
+public/favicon.ico
+.DS_Store

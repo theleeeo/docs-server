@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/go-github/v58/github"
 )
 
 var (
@@ -98,6 +100,10 @@ func (s *Server) Run(ctx context.Context) error {
 func (s *Server) Poll() error {
 	versions, err := s.provider.ListVersions(context.Background())
 	if err != nil {
+		if _, ok := err.(*github.RateLimitError); ok {
+			slog.Warn("Rate limit reached, skipping poll")
+			return nil
+		}
 		return err
 	}
 
