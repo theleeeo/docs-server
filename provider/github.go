@@ -30,6 +30,11 @@ func NewGithub(owner, repo string) (*githubProvider, error) {
 	}, nil
 }
 
+// RootURL returns the url of where to get the swagger files from
+func (p *githubProvider) RootURL() string {
+	return fmt.Sprintf("raw.githubusercontent.com/%s/%s", p.owner, p.repo)
+}
+
 // Get the names of all tags in the repository
 func (p *githubProvider) ListVersions(ctx context.Context) ([]string, error) {
 	tags, _, err := p.client.Repositories.ListTags(ctx, p.owner, p.repo, &github.ListOptions{PerPage: 10})

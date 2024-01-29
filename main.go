@@ -66,7 +66,7 @@ func main() {
 
 	app, err := app.New(&app.Config{
 		Address:     cfg.App.Address,
-		RootUrl:     cfg.App.RootUrl,
+		RootUrl:     ghClient.RootURL(),
 		CompanyName: cfg.Design.CompanyName,
 		CompanyLogo: cfg.Design.CompanyLogo,
 	}, s)

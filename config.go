@@ -17,7 +17,6 @@ type Config struct {
 
 	App struct {
 		Address string `yaml:"address"`
-		RootUrl string `yaml:"root_url"`
 	} `yaml:"app"`
 
 	Server struct {

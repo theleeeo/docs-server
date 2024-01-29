@@ -55,7 +55,6 @@ func registerHandlers(a *App) {
 	})
 
 	// Serve static files
-	a.fiberApp.Static("/docs", "./docs")
 	a.fiberApp.Static("/", staticFilesPath)
 
 	a.fiberApp.Get("/", a.getIndexHandler)

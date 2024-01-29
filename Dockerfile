@@ -28,7 +28,5 @@ COPY --from=builder /app/app .
 COPY public public
 COPY views views
 
-COPY docs ./docs
-
 # Command to run the executable.
 CMD ["./app"]
