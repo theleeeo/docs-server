@@ -24,28 +24,28 @@ const (
 
 func getCompanyLogo(location string) ([]byte, error) {
 	// Check if CompanyLogo is a file
-	slog.Debug("Checking if CompanyLogo is a file")
+	slog.Debug("checking if CompanyLogo is a file")
 	// Prepend "public/" to the path because that's where the static files are
 	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", location))
 	if err == nil {
-		slog.Info("Company logo loaded from file")
+		slog.Info("company logo loaded from file")
 		defer file.Close()
 		return io.ReadAll(file)
 	}
 	if !os.IsNotExist(err) {
 		return nil, err
 	}
-	slog.Debug("CompanyLogo is not a file")
+	slog.Debug("companyLogo is not a file")
 
 	// If CompanyLogo is not a file, assume it's a URL and make an HTTP request
-	slog.Debug("Checking if CompanyLogo is a URL")
+	slog.Debug("checking if CompanyLogo is a URL")
 	resp, err := http.Get(location)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	slog.Info("Company logo loaded from URL")
+	slog.Info("company logo loaded from URL")
 	return io.ReadAll(resp.Body)
 }
 
@@ -66,7 +66,7 @@ func registerHandlers(a *App) {
 
 func validateConfig(cfg *Config) error {
 	if cfg.Address == "" {
-		slog.Info("No address set, using default", "Default", defaultAddress)
+		slog.Info("no address set, using default", "default", defaultAddress)
 		cfg.Address = defaultAddress
 	}
 
@@ -86,7 +86,7 @@ func validateConfig(cfg *Config) error {
 	}
 
 	if cfg.CompanyLogo == "" {
-		slog.Info("No company logo set, using default", "Default", defaultLogo)
+		slog.Info("no company logo set, using default", "default", defaultLogo)
 		cfg.CompanyLogo = defaultLogo
 	}
 

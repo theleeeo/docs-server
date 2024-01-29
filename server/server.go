@@ -22,12 +22,12 @@ type Provider interface {
 
 func validateConfig(cfg *Config) error {
 	if cfg.PollInterval == 0 {
-		slog.Info("No poll interval set, using default", "Default", defaultPollInterval)
+		slog.Info("no poll interval set, using default", "default", defaultPollInterval)
 		cfg.PollInterval = defaultPollInterval
 	}
 
 	if cfg.PathPrefix != "" && !strings.HasSuffix(cfg.PathPrefix, "/") {
-		slog.Info("Path does not end with a slash, appending one", "Path", cfg.PathPrefix)
+		slog.Info("path does not end with a slash, appending one", "path", cfg.PathPrefix)
 		cfg.PathPrefix += "/"
 	}
 
@@ -103,7 +103,7 @@ func (s *Server) Poll() error {
 	versions, err := s.provider.ListVersions(context.Background())
 	if err != nil {
 		if _, ok := err.(*github.RateLimitError); ok {
-			slog.Warn("Rate limit reached, skipping poll")
+			slog.Warn("rate limit reached, skipping poll")
 			return nil
 		}
 		return err

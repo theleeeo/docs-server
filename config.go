@@ -9,9 +9,10 @@ import (
 
 type Config struct {
 	Provider struct {
-		Github struct {
-			Owner string `yaml:"owner"`
-			Repo  string `yaml:"repo"`
+		Github *struct {
+			Owner   string `yaml:"owner"`
+			Repo    string `yaml:"repo"`
+			MaxTags int    `yaml:"max_tags"`
 		} `yaml:"github"`
 	} `yaml:"provider"`
 

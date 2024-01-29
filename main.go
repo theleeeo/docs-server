@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -16,6 +17,11 @@ import (
 	"github.com/theleeeo/docs-server/server"
 	"github.com/theleeeo/leolog"
 )
+
+type appProvider interface {
+	server.Provider
+	RootURL() string
+}
 
 func parseInterval(s string) (time.Duration, error) {
 	if s == "" {
@@ -41,26 +47,15 @@ func main() {
 		return
 	}
 
-	ghClient, err := provider.NewGithub(cfg.Provider.Github.Owner, cfg.Provider.Github.Repo)
+	ghClient, err := setupProvider(cfg)
 	if err != nil {
-		color.Red("failed to create github provider: %s", err)
+		color.Red("failed to setup provider: %s", err)
 		return
 	}
 
-	serverConfig := &server.Config{
-		PathPrefix: cfg.Server.PathPrefix,
-		FileSuffix: cfg.Server.FileSuffix,
-	}
-	interval, err := parseInterval(cfg.Server.PollInterval)
+	s, err := setupServer(cfg, ghClient)
 	if err != nil {
-		color.Red("failed to parse poll interval: %s", err)
-		return
-	}
-	serverConfig.PollInterval = interval
-
-	s, err := server.New(serverConfig, ghClient)
-	if err != nil {
-		color.Red("failed to create server: %s", err)
+		color.Red("failed to setup server: %s", err)
 		return
 	}
 
@@ -122,4 +117,45 @@ func main() {
 	}
 
 	wg.Wait()
+}
+
+func setupProvider(cfg *Config) (p appProvider, err error) {
+	// This pattern is possible extensibility, even if it's not used atm.
+	if cfg.Provider.Github != nil {
+		ghConfig := &provider.GithubConfig{
+			Owner:   cfg.Provider.Github.Owner,
+			Repo:    cfg.Provider.Github.Repo,
+			MaxTags: cfg.Provider.Github.MaxTags,
+		}
+
+		p, err = provider.NewGithub(ghConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if p == nil {
+		return nil, fmt.Errorf("no provider configured")
+	}
+
+	return p, nil
+}
+
+func setupServer(cfg *Config, p server.Provider) (s *server.Server, err error) {
+	serverConfig := &server.Config{
+		PathPrefix: cfg.Server.PathPrefix,
+		FileSuffix: cfg.Server.FileSuffix,
+	}
+	interval, err := parseInterval(cfg.Server.PollInterval)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse poll interval: %w", err)
+	}
+	serverConfig.PollInterval = interval
+
+	s, err = server.New(serverConfig, p)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }

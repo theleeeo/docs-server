@@ -3,41 +3,55 @@ package provider
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/google/go-github/v58/github"
 )
 
-type githubProvider struct {
-	owner  string
-	repo   string
+const (
+	defaultMaxTags = 10
+)
+
+type GithubProvider struct {
+	cfg    *GithubConfig
 	client *github.Client
 }
 
-func NewGithub(owner, repo string) (*githubProvider, error) {
-	if owner == "" {
+type GithubConfig struct {
+	Owner   string
+	Repo    string
+	MaxTags int
+}
+
+func NewGithub(cfg *GithubConfig) (*GithubProvider, error) {
+	if cfg.Owner == "" {
 		return nil, fmt.Errorf("owner cannot be empty")
 	}
 
-	if repo == "" {
+	if cfg.Repo == "" {
 		return nil, fmt.Errorf("repo cannot be empty")
 	}
 
-	return &githubProvider{
-		owner:  owner,
-		repo:   repo,
+	if cfg.MaxTags <= 0 {
+		slog.Info("max tags not set, using default", "default", defaultMaxTags)
+		cfg.MaxTags = defaultMaxTags
+	}
+
+	return &GithubProvider{
+		cfg:    cfg,
 		client: github.NewClient(nil),
 	}, nil
 }
 
 // RootURL returns the url of where to get the swagger files from
-func (p *githubProvider) RootURL() string {
-	return fmt.Sprintf("raw.githubusercontent.com/%s/%s", p.owner, p.repo)
+func (p *GithubProvider) RootURL() string {
+	return fmt.Sprintf("raw.githubusercontent.com/%s/%s", p.cfg.Owner, p.cfg.Repo)
 }
 
 // Get the names of all tags in the repository
-func (p *githubProvider) ListVersions(ctx context.Context) ([]string, error) {
-	tags, _, err := p.client.Repositories.ListTags(ctx, p.owner, p.repo, &github.ListOptions{PerPage: 10})
+func (p *GithubProvider) ListVersions(ctx context.Context) ([]string, error) {
+	tags, _, err := p.client.Repositories.ListTags(ctx, p.cfg.Owner, p.cfg.Repo, &github.ListOptions{PerPage: p.cfg.MaxTags})
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +64,8 @@ func (p *githubProvider) ListVersions(ctx context.Context) ([]string, error) {
 	return versions, nil
 }
 
-func (p *githubProvider) ListFiles(ctx context.Context, tag, path string) ([]string, error) {
-	tree, _, err := p.client.Git.GetTree(ctx, p.owner, p.repo, tag, true)
+func (p *GithubProvider) ListFiles(ctx context.Context, tag, path string) ([]string, error) {
+	tree, _, err := p.client.Git.GetTree(ctx, p.cfg.Owner, p.cfg.Repo, tag, true)
 	if err != nil {
 		return nil, err
 	}
