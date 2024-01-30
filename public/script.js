@@ -3,7 +3,7 @@ window.onload = function () {
 };
 
 function setupVersionSelect() {
-    fetch('/versions')
+    fetch('/docs/versions')
         .then(response => response.json())
         .then(versions => {
             var dropdown = document.getElementById('dropdown');
@@ -22,7 +22,7 @@ function setupVersionSelect() {
 
 function handleVersionSelect() {
     const version = document.getElementById('dropdown').value;
-    fetch(`/version/${version}/roles`)
+    fetch(`/docs/version/${version}/roles`)
         .then(response => response.json())
         .then(roles => {
             buttonContainer = document.getElementById('button-container');
@@ -32,7 +32,7 @@ function handleVersionSelect() {
                 button.innerHTML = role;
 
                 button.onclick = function () {
-                    window.location.href = `/${version}/${role}`;
+                    window.location.href = `/docs/${version}/${role}`;
                 };
 
                 buttonContainer.appendChild(button);
