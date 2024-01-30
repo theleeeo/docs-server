@@ -50,18 +50,18 @@ func getCompanyLogo(location string) ([]byte, error) {
 }
 
 func registerHandlers(a *App) {
-	a.fiberApp.Get("/docs/favicon.ico", func(c *fiber.Ctx) error {
+	a.fiberApp.Get("/favicon.ico", func(c *fiber.Ctx) error {
 		return c.Send(a.logo)
 	})
 
 	// Serve static files
-	a.fiberApp.Static("/docs/", staticFilesPath)
+	a.fiberApp.Static("/", staticFilesPath)
 
-	a.fiberApp.Get("/docs/", a.getIndexHandler)
-	a.fiberApp.Get("/docs/:version/:role", a.renderDocHandler)
+	a.fiberApp.Get("/", a.getIndexHandler)
+	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
 
-	a.fiberApp.Get("/docs/versions", a.getVersionsHandler)
-	a.fiberApp.Get("/docs/version/:version/roles", a.getRolesHandler)
+	a.fiberApp.Get("/versions", a.getVersionsHandler)
+	a.fiberApp.Get("/version/:version/roles", a.getRolesHandler)
 }
 
 func validateConfig(cfg *Config) error {
