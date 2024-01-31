@@ -128,7 +128,7 @@ func (s *Server) Poll() error {
 	}
 
 	s.docsRWLock.Lock()
-	s.docs = append(s.docs, docs...)
+	s.docs = docs
 	s.docsRWLock.Unlock()
 
 	return nil
