@@ -107,6 +107,10 @@ func (s *Server) Poll() error {
 			slog.Warn("rate limit reached, skipping poll")
 			return nil
 		}
+		if _, ok := err.(*github.AbuseRateLimitError); ok {
+			slog.Warn("abuse rate limit reached, skipping poll")
+			return nil
+		}
 		return err
 	}
 
