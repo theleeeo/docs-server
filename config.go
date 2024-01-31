@@ -28,8 +28,8 @@ type Config struct {
 	} `yaml:"server"`
 
 	Design struct {
-		CompanyName string `yaml:"company_name"`
-		CompanyLogo string `yaml:"company_logo"`
+		HeaderTitle string `yaml:"header_name"`
+		HeaderLogo  string `yaml:"header_logo"`
 	} `yaml:"design"`
 }
 

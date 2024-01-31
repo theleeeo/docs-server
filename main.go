@@ -62,8 +62,8 @@ func main() {
 	app, err := app.New(&app.Config{
 		Address:     cfg.App.Address,
 		RootUrl:     ghClient.RootURL(),
-		CompanyName: cfg.Design.CompanyName,
-		CompanyLogo: cfg.Design.CompanyLogo,
+		HeaderTitle: cfg.Design.HeaderTitle,
+		HeaderLogo:  cfg.Design.HeaderLogo,
 	}, s)
 	if err != nil {
 		color.Red("failed to create app: %s", err)

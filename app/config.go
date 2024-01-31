@@ -6,6 +6,6 @@ type Config struct {
 	// The root url of where to find the swagger files
 	RootUrl string
 
-	CompanyName string
-	CompanyLogo string
+	HeaderTitle string
+	HeaderLogo  string
 }

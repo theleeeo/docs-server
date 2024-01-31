@@ -58,7 +58,7 @@ app:
 
 design:
   # The title that will be shown in the header
-  company_name: Leo Evil Inc'
+  header_name: Leo Evil Inc'
   # A filepath or url to the logo that will be shown in the header
-  company_logo: https://theleo.se/favicon.png
+  header_logo: https://theleo.se/favicon.png
 ```

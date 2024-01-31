@@ -22,30 +22,30 @@ const (
 	defaultLogo     = "/favicon.ico"
 )
 
-func getCompanyLogo(location string) ([]byte, error) {
-	// Check if CompanyLogo is a file
-	slog.Debug("checking if CompanyLogo is a file")
+func getHeaderLogo(location string) ([]byte, error) {
+	// Check if HeaderLogo is a file
+	slog.Debug("checking if HeaderLogo is a file")
 	// Prepend "public/" to the path because that's where the static files are
 	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", location))
 	if err == nil {
-		slog.Info("company logo loaded from file")
+		slog.Info("header logo loaded from file")
 		defer file.Close()
 		return io.ReadAll(file)
 	}
 	if !os.IsNotExist(err) {
 		return nil, err
 	}
-	slog.Debug("companyLogo is not a file")
+	slog.Debug("headerLogo is not a file")
 
-	// If CompanyLogo is not a file, assume it's a URL and make an HTTP request
-	slog.Debug("checking if CompanyLogo is a URL")
+	// If HeaderLogo is not a file, assume it's a URL and make an HTTP request
+	slog.Debug("checking if HeaderLogo is a URL")
 	resp, err := http.Get(location)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	slog.Info("company logo loaded from URL")
+	slog.Info("header logo loaded from URL")
 	return io.ReadAll(resp.Body)
 }
 
@@ -81,13 +81,13 @@ func validateConfig(cfg *Config) error {
 	rootUrl.Scheme = "http"
 	cfg.RootUrl = rootUrl.String()
 
-	if cfg.CompanyName == "" {
-		return fmt.Errorf("company name is required")
+	if cfg.HeaderTitle == "" {
+		return fmt.Errorf("header name is required")
 	}
 
-	if cfg.CompanyLogo == "" {
-		slog.Info("no company logo set, using default", "default", defaultLogo)
-		cfg.CompanyLogo = defaultLogo
+	if cfg.HeaderLogo == "" {
+		slog.Info("no header logo set, using default", "default", defaultLogo)
+		cfg.HeaderLogo = defaultLogo
 	}
 
 	return nil
@@ -117,8 +117,8 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		serv: s,
 	}
 
-	// Load company logo
-	logo, err := getCompanyLogo(a.cfg.CompanyLogo)
+	// Load header logo
+	logo, err := getHeaderLogo(a.cfg.HeaderLogo)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +151,8 @@ func (a *App) Run(ctx context.Context) error {
 
 func (a *App) getIndexHandler(c *fiber.Ctx) error {
 	return c.Render("version-select", fiber.Map{
-		"CompanyName": a.cfg.CompanyName,
-		"CompanyLogo": a.cfg.CompanyLogo,
+		"HeaderTitle": a.cfg.HeaderTitle,
+		"HeaderLogo":  a.cfg.HeaderLogo,
 	}, "layouts/main")
 }
 
@@ -174,8 +174,8 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 		"RootUrl":     a.cfg.RootUrl,
 		"Path":        fmt.Sprintf("%s%s%s", a.serv.Path(), role, a.serv.FileSuffix()),
 		"Ref":         version,
-		"CompanyName": a.cfg.CompanyName,
-		"CompanyLogo": a.cfg.CompanyLogo,
+		"HeaderTitle": a.cfg.HeaderTitle,
+		"HeaderLogo":  a.cfg.HeaderLogo,
 	}, "layouts/main")
 }
 
