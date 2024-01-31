@@ -103,12 +103,12 @@ func (s *Server) Run(ctx context.Context) error {
 func (s *Server) Poll() error {
 	versions, err := s.provider.ListVersions(context.Background())
 	if err != nil {
-		if _, ok := err.(*github.RateLimitError); ok {
-			slog.Warn("rate limit reached, skipping poll")
+		if err, ok := err.(*github.RateLimitError); ok {
+			slog.Warn("rate limit reached, skipping poll", "rate", err.Rate)
 			return nil
 		}
-		if _, ok := err.(*github.AbuseRateLimitError); ok {
-			slog.Warn("abuse rate limit reached, skipping poll")
+		if err, ok := err.(*github.AbuseRateLimitError); ok {
+			slog.Warn("abuse rate limit reached, skipping poll", "retry-after", err.RetryAfter)
 			return nil
 		}
 		return err
