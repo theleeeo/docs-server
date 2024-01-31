@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -36,16 +37,42 @@ func parseInterval(s string) (time.Duration, error) {
 	return d, nil
 }
 
-func main() {
-	logger := slog.New(leolog.NewHandler(&slog.HandlerOptions{Level: slog.LevelDebug}))
-	log.SetLevel(log.LevelDebug)
-	slog.SetDefault(logger)
+func parseLogLevel(s string) (slog.Level, error) {
+	if s == "" {
+		return slog.LevelInfo, nil
+	}
 
+	s = strings.ToLower(s)
+	switch s {
+	case "debug":
+		return slog.LevelDebug, nil
+	case "info":
+		return slog.LevelInfo, nil
+	case "warn":
+		return slog.LevelWarn, nil
+	case "error":
+		return slog.LevelError, nil
+	default:
+		return slog.LevelDebug, fmt.Errorf("invalid log level: %s", s)
+	}
+}
+
+func main() {
 	cfg, err := loadConfig()
 	if err != nil {
 		color.Red("failed to load config: %s", err)
 		return
 	}
+
+	logLevel, err := parseLogLevel(cfg.LogLevel)
+	if err != nil {
+		color.Red("failed to parse log level: %s", err)
+		return
+	}
+
+	logger := slog.New(leolog.NewHandler(&slog.HandlerOptions{Level: logLevel}))
+	log.SetLevel(log.LevelDebug)
+	slog.SetDefault(logger)
 
 	ghClient, err := setupProvider(cfg)
 	if err != nil {

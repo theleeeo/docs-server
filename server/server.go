@@ -28,7 +28,6 @@ func validateConfig(cfg *Config) error {
 	}
 
 	if cfg.PathPrefix != "" && !strings.HasSuffix(cfg.PathPrefix, "/") {
-		slog.Info("path does not end with a slash, appending one", "path", cfg.PathPrefix)
 		cfg.PathPrefix += "/"
 	}
 
@@ -151,7 +150,7 @@ func (s *Server) FetchVersion(version string) error {
 	for i := range files {
 		f, ok := strings.CutSuffix(files[i], s.cfg.FileSuffix)
 		if !ok {
-			slog.Warn("found file does not end with the suffix, skipping", "file", files[i], "version", version, "suffix", s.cfg.FileSuffix)
+			slog.Warn("file does not end with the suffix, skipping", "file", files[i], "version", version, "suffix", s.cfg.FileSuffix)
 			continue
 		}
 		f = strings.TrimPrefix(files[i], s.cfg.PathPrefix)

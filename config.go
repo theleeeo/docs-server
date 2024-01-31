@@ -8,6 +8,8 @@ import (
 )
 
 type Config struct {
+	LogLevel string `yaml:"log_level"`
+
 	Provider struct {
 		Github *struct {
 			Owner     string `yaml:"owner"`

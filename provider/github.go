@@ -44,12 +44,6 @@ func NewGithub(cfg *GithubConfig) (*GithubProvider, error) {
 		cl.WithAuthToken(cfg.AuthToken)
 	}
 
-	r, _, err := cl.RateLimit.Get(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	slog.Info("github rate limit", "limit", r.GetCore().Limit, "remaining", r.GetCore().Remaining)
-
 	return &GithubProvider{
 		cfg:    cfg,
 		client: cl,

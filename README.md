@@ -31,6 +31,11 @@ The configuration is done using a `config.yml` file in the root of the project.
 The following is an example of a config file.
 
 ```yml
+# The minimum log level to log
+# Possible values are: debug, info, warn, error
+# Default is info
+log_level: info
+
 provider:
   github:
     # The user or organization that the repo belongs to
