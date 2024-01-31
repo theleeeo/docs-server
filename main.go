@@ -123,9 +123,10 @@ func setupProvider(cfg *Config) (p appProvider, err error) {
 	// This pattern is possible extensibility, even if it's not used atm.
 	if cfg.Provider.Github != nil {
 		ghConfig := &provider.GithubConfig{
-			Owner:   cfg.Provider.Github.Owner,
-			Repo:    cfg.Provider.Github.Repo,
-			MaxTags: cfg.Provider.Github.MaxTags,
+			Owner:     cfg.Provider.Github.Owner,
+			Repo:      cfg.Provider.Github.Repo,
+			MaxTags:   cfg.Provider.Github.MaxTags,
+			AuthToken: cfg.Provider.Github.AuthToken,
 		}
 
 		p, err = provider.NewGithub(ghConfig)

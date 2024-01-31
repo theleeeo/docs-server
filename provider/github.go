@@ -19,9 +19,10 @@ type GithubProvider struct {
 }
 
 type GithubConfig struct {
-	Owner   string
-	Repo    string
-	MaxTags int
+	Owner     string
+	Repo      string
+	MaxTags   int
+	AuthToken string
 }
 
 func NewGithub(cfg *GithubConfig) (*GithubProvider, error) {
@@ -38,9 +39,20 @@ func NewGithub(cfg *GithubConfig) (*GithubProvider, error) {
 		cfg.MaxTags = defaultMaxTags
 	}
 
+	cl := github.NewClient(nil)
+	if cfg.AuthToken != "" {
+		cl.WithAuthToken(cfg.AuthToken)
+	}
+
+	r, _, err := cl.RateLimit.Get(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	slog.Info("github rate limit", "limit", r.GetCore().Limit, "remaining", r.GetCore().Remaining)
+
 	return &GithubProvider{
 		cfg:    cfg,
-		client: github.NewClient(nil),
+		client: cl,
 	}, nil
 }
 
