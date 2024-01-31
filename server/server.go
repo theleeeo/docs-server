@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -109,27 +110,25 @@ func (s *Server) Poll() error {
 		return err
 	}
 
+	newVersions, removedVersions := s.calculateVersionDiffs(versions)
+
 	docs := make([]*Documentation, 0, len(versions))
-	for _, version := range versions {
-		files, err := s.provider.ListFiles(context.Background(), version, s.cfg.PathPrefix)
-		if err != nil {
+	for _, version := range newVersions {
+		slog.Info("found new version", "version", version)
+		if err := s.FetchVersion(version); err != nil {
 			return err
 		}
+	}
 
-		for i, file := range files {
-			f, ok := strings.CutSuffix(files[i], s.cfg.FileSuffix)
-			if !ok {
-				slog.Warn("found file does not end with the suffix, skipping", "file", file, "version", version, "suffix", s.cfg.FileSuffix)
-				continue
+	for _, version := range removedVersions {
+		slog.Info("removed version", "version", version)
+
+		for i, d := range s.docs {
+			if d.Version == version {
+				s.docs = append(s.docs[:i], s.docs[i+1:]...)
+				break
 			}
-			f = strings.TrimPrefix(file, s.cfg.PathPrefix)
-			files[i] = f
 		}
-
-		docs = append(docs, &Documentation{
-			Version: version,
-			Files:   files,
-		})
 	}
 
 	s.docsRWLock.Lock()
@@ -137,6 +136,69 @@ func (s *Server) Poll() error {
 	s.docsRWLock.Unlock()
 
 	return nil
+}
+
+func (s *Server) FetchVersion(version string) error {
+	files, err := s.provider.ListFiles(context.Background(), version, s.cfg.PathPrefix)
+	if err != nil {
+		return err
+	}
+
+	for i := range files {
+		f, ok := strings.CutSuffix(files[i], s.cfg.FileSuffix)
+		if !ok {
+			slog.Warn("found file does not end with the suffix, skipping", "file", files[i], "version", version, "suffix", s.cfg.FileSuffix)
+			continue
+		}
+		f = strings.TrimPrefix(files[i], s.cfg.PathPrefix)
+		files[i] = f
+	}
+
+	s.docsRWLock.Lock()
+	defer s.docsRWLock.Unlock()
+
+	// If the version already exists, update the files
+	for _, d := range s.docs {
+		if d.Version == version {
+			d.Files = files
+			return nil
+		}
+	}
+
+	// Otherwise, append a new version
+	s.docs = append(s.docs, &Documentation{
+		Version: version,
+		Files:   files,
+	})
+
+	return nil
+}
+
+// calculateVersionDiffs calculates the differences between the currently
+// available versions and the ones that were found by the provider.
+func (s *Server) calculateVersionDiffs(foundVersions []string) (newVersions []string, removedVersions []string) {
+	foundVersionsMap := make(map[string]struct{}, len(foundVersions))
+	for _, t := range foundVersions {
+		foundVersionsMap[t] = struct{}{}
+	}
+
+	s.docsRWLock.RLock()
+	for _, d := range s.docs {
+		if _, ok := foundVersionsMap[d.Version]; !ok {
+			removedVersions = append(removedVersions, d.Version)
+		}
+	}
+	s.docsRWLock.RUnlock()
+
+	for _, t := range foundVersions {
+		if !slices.ContainsFunc(s.docs, func(d *Documentation) bool {
+			return d.Version == t
+		}) {
+			newVersions = append(newVersions, t)
+		}
+	}
+
+	return newVersions, removedVersions
 }
 
 func (s *Server) GetVersions() []string {
