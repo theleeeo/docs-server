@@ -117,8 +117,13 @@ func (s *Server) Poll() error {
 		}
 
 		for i, file := range files {
-			files[i] = strings.TrimPrefix(file, s.cfg.PathPrefix)
-			files[i] = strings.TrimSuffix(files[i], s.cfg.FileSuffix)
+			f, ok := strings.CutSuffix(files[i], s.cfg.FileSuffix)
+			if !ok {
+				slog.Warn("found file does not end with the suffix, skipping", "file", file, "version", version, "suffix", s.cfg.FileSuffix)
+				continue
+			}
+			f = strings.TrimPrefix(file, s.cfg.PathPrefix)
+			files[i] = f
 		}
 
 		docs = append(docs, &Documentation{
