@@ -49,18 +49,18 @@ func getHeaderLogo(location string) ([]byte, error) {
 }
 
 func registerHandlers(a *App) {
-	a.fiberApp.Get("/favicon.ico", func(c *fiber.Ctx) error {
+	a.fiberApp.Get("/docs/favicon.ico", func(c *fiber.Ctx) error {
 		return c.Send(a.logo)
 	})
 
 	// Serve static files
-	a.fiberApp.Static("/", staticFilesPath)
+	a.fiberApp.Static("/docs/", staticFilesPath)
 
-	a.fiberApp.Get("/", a.getIndexHandler)
-	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
+	a.fiberApp.Get("/docs/", a.getIndexHandler)
+	a.fiberApp.Get("/docs/:version/:role", a.renderDocHandler)
 
-	a.fiberApp.Get("/versions", a.getVersionsHandler)
-	a.fiberApp.Get("/version/:version/roles", a.getRolesHandler)
+	a.fiberApp.Get("/docs/versions", a.getVersionsHandler)
+	a.fiberApp.Get("/docs/version/:version/roles", a.getRolesHandler)
 }
 
 func validateConfig(cfg *Config) error {
@@ -80,9 +80,9 @@ func validateConfig(cfg *Config) error {
 	rootUrl.Scheme = "http"
 	cfg.RootUrl = rootUrl.String()
 
-	if cfg.HeaderTitle == "" {
-		return fmt.Errorf("header name is required")
-	}
+	// if cfg.HeaderTitle == "" {
+	// 	return fmt.Errorf("header name is required")
+	// }
 
 	if cfg.HeaderLogo == "" {
 		slog.Info("no header logo set, using default", "default", defaultLogo)
@@ -152,6 +152,7 @@ func (a *App) getIndexHandler(c *fiber.Ctx) error {
 	return c.Render("version-select", fiber.Map{
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"HeaderLogo":  a.cfg.HeaderLogo,
+		"Favicon":     a.cfg.Favicon,
 	}, "layouts/main")
 }
 
@@ -165,6 +166,7 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 		"Ref":         version,
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"HeaderLogo":  a.cfg.HeaderLogo,
+		"Favicon":     a.cfg.Favicon,
 	}, "layouts/main")
 }
 

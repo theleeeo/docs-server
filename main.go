@@ -91,6 +91,7 @@ func main() {
 		RootUrl:     ghClient.RootURL(),
 		HeaderTitle: cfg.Design.HeaderTitle,
 		HeaderLogo:  cfg.Design.HeaderLogo,
+		Favicon:     cfg.Design.Favicon,
 	}, s)
 	if err != nil {
 		color.Red("failed to create app: %s", err)
