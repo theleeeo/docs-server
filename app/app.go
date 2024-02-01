@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"slices"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
@@ -159,16 +158,6 @@ func (a *App) getIndexHandler(c *fiber.Ctx) error {
 func (a *App) renderDocHandler(c *fiber.Ctx) error {
 	version := c.Params("version")
 	role := c.Params("role")
-
-	doc := a.serv.GetVersion(version)
-	if doc == nil {
-		return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
-	}
-
-	ok := slices.Contains(doc.Files, role)
-	if !ok {
-		return c.Status(fiber.StatusNotFound).SendString("404 Role Not Found")
-	}
 
 	return c.Render("doc", fiber.Map{
 		"RootUrl":     a.cfg.RootUrl,
