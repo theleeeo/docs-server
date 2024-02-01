@@ -88,6 +88,7 @@ func main() {
 
 	app, err := app.New(&app.Config{
 		Address:     cfg.App.Address,
+		DocsUseHttp: cfg.App.DocsUseHttp,
 		RootUrl:     ghClient.RootURL(),
 		HeaderTitle: cfg.Design.HeaderTitle,
 		HeaderLogo:  cfg.Design.HeaderLogo,

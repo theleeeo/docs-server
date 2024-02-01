@@ -19,15 +19,16 @@ type Config struct {
 		} `yaml:"github"`
 	} `yaml:"provider"`
 
-	App struct {
-		Address string `yaml:"address"`
-	} `yaml:"app"`
-
 	Server struct {
 		PollInterval string `yaml:"poll_interval"`
 		PathPrefix   string `yaml:"path_prefix"`
 		FileSuffix   string `yaml:"file_suffix"`
 	} `yaml:"server"`
+
+	App struct {
+		Address     string `yaml:"address"`
+		DocsUseHttp bool   `yaml:"docs_use_http"`
+	} `yaml:"app"`
 
 	Design struct {
 		HeaderTitle string `yaml:"header_name"`

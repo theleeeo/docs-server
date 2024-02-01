@@ -77,7 +77,11 @@ func validateConfig(cfg *Config) error {
 	if err != nil {
 		return fmt.Errorf("invalid root url: %w", err)
 	}
-	rootUrl.Scheme = "http"
+	rootUrl.Scheme = "https"
+	if cfg.DocsUseHttp {
+		rootUrl.Scheme = "http"
+	}
+
 	cfg.RootUrl = rootUrl.String()
 
 	if cfg.HeaderTitle == "" {
