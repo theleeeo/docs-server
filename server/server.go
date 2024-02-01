@@ -115,7 +115,6 @@ func (s *Server) Poll() error {
 
 	newVersions, removedVersions := s.calculateVersionDiffs(versions)
 
-	docs := make([]*Documentation, 0, len(versions))
 	for _, version := range newVersions {
 		slog.Info("found new version", "version", version)
 		if err := s.FetchVersion(version); err != nil {
@@ -134,10 +133,6 @@ func (s *Server) Poll() error {
 		}
 	}
 
-	s.docsRWLock.Lock()
-	s.docs = docs
-	s.docsRWLock.Unlock()
-
 	return nil
 }
 
@@ -153,7 +148,7 @@ func (s *Server) FetchVersion(version string) error {
 			slog.Warn("file does not end with the suffix, skipping", "file", files[i], "version", version, "suffix", s.cfg.FileSuffix)
 			continue
 		}
-		f = strings.TrimPrefix(files[i], s.cfg.PathPrefix)
+		f = strings.TrimPrefix(f, s.cfg.PathPrefix)
 		files[i] = f
 	}
 
