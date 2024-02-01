@@ -38,6 +38,10 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/theleeeo/leolog v0.0.0-20240124214102-5723ebde1536 h1:5EoAfFyUEVeIZGWVYO3O6/7vtLS0Q3iMdpkGKlzERh8=
 github.com/theleeeo/leolog v0.0.0-20240124214102-5723ebde1536/go.mod h1:gmODJuHZdtd8IwTrQdEd9+sjWU55YtAYRxau9tv3szw=
+github.com/theleeeo/leolog v0.0.0-20240201202119-075fb1328208 h1:4tGF40Wn+Y5cxMzWFSnEt1iQskG77Z+vgrr1OH9vTBo=
+github.com/theleeeo/leolog v0.0.0-20240201202119-075fb1328208/go.mod h1:gmODJuHZdtd8IwTrQdEd9+sjWU55YtAYRxau9tv3szw=
+github.com/theleeeo/leolog v0.0.0-20240201202331-5ee228d0f1da h1:1dDmZzT3szSQF462CFbeNL8fcY+cIDxTX921dimZbCA=
+github.com/theleeeo/leolog v0.0.0-20240201202331-5ee228d0f1da/go.mod h1:gmODJuHZdtd8IwTrQdEd9+sjWU55YtAYRxau9tv3szw=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.51.0 h1:8b30A5JlZ6C7AS81RsWjYMQmrZG6feChmgAolCl1SqA=

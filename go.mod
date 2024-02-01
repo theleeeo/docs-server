@@ -7,7 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/template/html/v2 v2.1.0
 	github.com/google/go-github/v58 v58.0.0
-	github.com/theleeeo/leolog v0.0.0-20240124214102-5723ebde1536
+	github.com/theleeeo/leolog v0.0.0-20240201202331-5ee228d0f1da
 	gopkg.in/yaml.v3 v3.0.1
 )
 

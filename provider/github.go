@@ -59,7 +59,7 @@ func (p *GithubProvider) RootURL() string {
 func (p *GithubProvider) ListVersions(ctx context.Context) ([]string, error) {
 	tags, _, err := p.client.Repositories.ListTags(ctx, p.cfg.Owner, p.cfg.Repo, &github.ListOptions{PerPage: p.cfg.MaxTags})
 	if err != nil {
-		return nil, err
+		return nil, handleError(err)
 	}
 
 	var versions []string
@@ -73,7 +73,7 @@ func (p *GithubProvider) ListVersions(ctx context.Context) ([]string, error) {
 func (p *GithubProvider) ListFiles(ctx context.Context, tag, path string) ([]string, error) {
 	tree, _, err := p.client.Git.GetTree(ctx, p.cfg.Owner, p.cfg.Repo, tag, true)
 	if err != nil {
-		return nil, err
+		return nil, handleError(err)
 	}
 
 	var files []string
@@ -84,4 +84,14 @@ func (p *GithubProvider) ListFiles(ctx context.Context, tag, path string) ([]str
 	}
 
 	return files, nil
+}
+
+func handleError(err error) error {
+	if err, ok := err.(*github.RateLimitError); ok {
+		return NewRateLimitError("rate limit reached", "limit", err.Rate.Limit, "reset", err.Rate.Reset)
+	}
+	if err, ok := err.(*github.AbuseRateLimitError); ok {
+		return NewRateLimitError("abuse rate limit reached", "retry_after", err.RetryAfter)
+	}
+	return err
 }

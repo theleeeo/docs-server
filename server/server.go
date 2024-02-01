@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -9,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v58/github"
+	"github.com/theleeeo/docs-server/provider"
 )
 
 var (
@@ -102,12 +103,9 @@ func (s *Server) Run(ctx context.Context) error {
 func (s *Server) Poll() error {
 	versions, err := s.provider.ListVersions(context.Background())
 	if err != nil {
-		if err, ok := err.(*github.RateLimitError); ok {
-			slog.Warn("rate limit reached, skipping poll", "rate", err.Rate)
-			return nil
-		}
-		if err, ok := err.(*github.AbuseRateLimitError); ok {
-			slog.Warn("abuse rate limit reached, skipping poll", "retry-after", err.RetryAfter)
+		var rateLimitErr provider.RateLimitError
+		if errors.As(err, &rateLimitErr) {
+			slog.Warn("rate limit reached, skipping poll", rateLimitErr.KVs()...)
 			return nil
 		}
 		return err
@@ -133,6 +131,11 @@ func (s *Server) Poll() error {
 func (s *Server) FetchVersion(version string) error {
 	files, err := s.provider.ListFiles(context.Background(), version, s.cfg.PathPrefix)
 	if err != nil {
+		var rateLimitErr provider.RateLimitError
+		if errors.As(err, &rateLimitErr) {
+			slog.Warn("rate limit reached, skipping poll", rateLimitErr.KVs()...)
+			return nil
+		}
 		return err
 	}
 
