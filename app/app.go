@@ -84,10 +84,6 @@ func validateConfig(cfg *Config) error {
 
 	cfg.RootUrl = rootUrl.String()
 
-	if cfg.HeaderTitle == "" {
-		return fmt.Errorf("header name is required")
-	}
-
 	if cfg.HeaderLogo == "" {
 		slog.Info("no header logo set, using default", "default", defaultLogo)
 		cfg.HeaderLogo = defaultLogo
