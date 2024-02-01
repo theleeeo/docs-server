@@ -124,13 +124,7 @@ func (s *Server) Poll() error {
 
 	for _, version := range removedVersions {
 		slog.Info("removed version", "version", version)
-
-		for i, d := range s.docs {
-			if d.Version == version {
-				s.docs = append(s.docs[:i], s.docs[i+1:]...)
-				break
-			}
-		}
+		s.RemoveVersion(version)
 	}
 
 	return nil
@@ -170,6 +164,18 @@ func (s *Server) FetchVersion(version string) error {
 	})
 
 	return nil
+}
+
+func (s *Server) RemoveVersion(version string) {
+	s.docsRWLock.Lock()
+	defer s.docsRWLock.Unlock()
+
+	for i, d := range s.docs {
+		if d.Version == version {
+			s.docs = append(s.docs[:i], s.docs[i+1:]...)
+			break
+		}
+	}
 }
 
 // calculateVersionDiffs calculates the differences between the currently
