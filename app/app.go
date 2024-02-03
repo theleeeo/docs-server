@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/template/html/v2"
 	"github.com/theleeeo/docs-server/server"
 )
@@ -49,10 +50,6 @@ func getHeaderLogo(location string) ([]byte, error) {
 }
 
 func registerHandlers(a *App) {
-	a.fiberApp.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return c.Send(a.logo)
-	})
-
 	// Serve static files
 	a.fiberApp.Static("/", staticFilesPath)
 
@@ -97,8 +94,6 @@ type App struct {
 
 	cfg  *Config
 	serv *server.Server
-
-	logo []byte
 }
 
 func New(cfg *Config, s *server.Server) (*App, error) {
@@ -121,7 +116,10 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	a.logo = logo
+
+	a.fiberApp.Use(favicon.New(favicon.Config{
+		Data: logo,
+	}))
 
 	registerHandlers(a)
 
@@ -152,6 +150,7 @@ func (a *App) getIndexHandler(c *fiber.Ctx) error {
 	return c.Render("version-select", fiber.Map{
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"HeaderLogo":  a.cfg.HeaderLogo,
+		"Favicon":     a.cfg.Favicon,
 	}, "layouts/main")
 }
 
@@ -165,6 +164,7 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 		"Ref":         version,
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"HeaderLogo":  a.cfg.HeaderLogo,
+		"Favicon":     a.cfg.Favicon,
 	}, "layouts/main")
 }
 
