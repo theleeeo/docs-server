@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
+	"text/template"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -27,6 +30,11 @@ type App struct {
 
 	cfg  *Config
 	serv *server.Server
+
+	files struct {
+		script string
+		style  string
+	}
 }
 
 func New(cfg *Config, s *server.Server) (*App, error) {
@@ -54,6 +62,10 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		Data: logo,
 	}))
 
+	if err := a.loadScript(); err != nil {
+		return nil, err
+	}
+
 	registerHandlers(a)
 
 	return a, nil
@@ -80,15 +92,15 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func registerHandlers(a *App) {
-	a.fiberApp.Get("/", a.getIndexHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/"), a.getIndexHandler)
 
-	a.fiberApp.Get("/script.js", a.getScriptHandler)
-	a.fiberApp.Get("/style.css", a.getStyleHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/script.js"), a.getScriptHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/style.css"), a.getStyleHandler)
 
-	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/:version/:role"), a.renderDocHandler)
 
-	a.fiberApp.Get("/versions", a.getVersionsHandler)
-	a.fiberApp.Get("/version/:version/roles", a.getRolesHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/versions"), a.getVersionsHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/version/:version/roles"), a.getRolesHandler)
 }
 
 func validateConfig(cfg *Config) error {
@@ -115,6 +127,10 @@ func validateConfig(cfg *Config) error {
 	if cfg.HeaderLogo == "" {
 		slog.Info("no header logo set, using default", "default", defaultLogo)
 		cfg.HeaderLogo = defaultLogo
+	}
+
+	if !strings.HasPrefix(cfg.PathPrefix, "/") {
+		cfg.PathPrefix = fmt.Sprint("/", cfg.PathPrefix)
 	}
 
 	return nil
@@ -145,4 +161,32 @@ func getHeaderLogo(location string) ([]byte, error) {
 
 	slog.Info("header logo loaded from URL")
 	return io.ReadAll(resp.Body)
+}
+
+func (a *App) loadScript() error {
+	b, err := os.ReadFile(filepath.Join(publicFilesPath, "script.js"))
+	if err != nil {
+		return err
+	}
+
+	t, err := template.New("script").Parse(string(b))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(a.cfg.PathPrefix)
+
+	vars := map[string]string{
+		"PathPrefix": a.cfg.PathPrefix,
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, vars); err != nil {
+		return err
+	}
+
+	a.files.script = buf.String()
+	fmt.Println(a.files.script)
+
+	return nil
 }

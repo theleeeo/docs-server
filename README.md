@@ -65,6 +65,9 @@ app:
   # Most browsers will however not allow a https site to fetch resources over http.
   # The default is false, then it will use https
   docs_use_http: false
+  # An optional prefix to the path that the app listens on
+  # This is useful if you are running the app behind a reverse proxy
+  path_prefix: /docs
 
 design:
   # The title that will be shown in the header

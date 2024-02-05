@@ -10,4 +10,6 @@ type Config struct {
 	HeaderTitle string
 	HeaderLogo  string
 	Favicon     string
+
+	PathPrefix string
 }

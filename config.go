@@ -28,6 +28,7 @@ type Config struct {
 	App struct {
 		Address     string `yaml:"address"`
 		DocsUseHttp bool   `yaml:"docs_use_http"`
+		PathPrefix  string `yaml:"path_prefix"`
 	} `yaml:"app"`
 
 	Design struct {

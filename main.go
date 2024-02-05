@@ -93,6 +93,7 @@ func main() {
 		HeaderTitle: cfg.Design.HeaderTitle,
 		HeaderLogo:  cfg.Design.HeaderLogo,
 		Favicon:     cfg.Design.Favicon,
+		PathPrefix:  cfg.App.PathPrefix,
 	}, s)
 	if err != nil {
 		color.Red("failed to create app: %s", err)

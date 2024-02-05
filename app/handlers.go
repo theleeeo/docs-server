@@ -7,7 +7,7 @@ import (
 )
 
 func (a App) getScriptHandler(c *fiber.Ctx) error {
-	return c.SendFile(fmt.Sprint(publicFilesPath, "/script.js"))
+	return c.SendString(string(a.files.script))
 }
 
 func (a App) getStyleHandler(c *fiber.Ctx) error {
@@ -19,6 +19,7 @@ func (a *App) getIndexHandler(c *fiber.Ctx) error {
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"HeaderLogo":  a.cfg.HeaderLogo,
 		"Favicon":     a.cfg.Favicon,
+		"PathPrefix":  a.cfg.PathPrefix,
 	}, "layouts/main")
 }
 
@@ -33,6 +34,7 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"HeaderLogo":  a.cfg.HeaderLogo,
 		"Favicon":     a.cfg.Favicon,
+		"PathPrefix":  a.cfg.PathPrefix,
 	}, "layouts/main")
 }
 
