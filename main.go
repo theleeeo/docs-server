@@ -91,7 +91,7 @@ func main() {
 		DocsUseHttp: cfg.App.DocsUseHttp,
 		RootUrl:     ghClient.RootURL(),
 		HeaderTitle: cfg.Design.HeaderTitle,
-		HeaderLogo:  cfg.Design.HeaderLogo,
+		HeaderImage: cfg.Design.HeaderImage,
 		Favicon:     cfg.Design.Favicon,
 		PathPrefix:  cfg.App.PathPrefix,
 	}, s)

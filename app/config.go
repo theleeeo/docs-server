@@ -8,7 +8,7 @@ type Config struct {
 	RootUrl string
 
 	HeaderTitle string
-	HeaderLogo  string
+	HeaderImage string
 	Favicon     string
 
 	PathPrefix string

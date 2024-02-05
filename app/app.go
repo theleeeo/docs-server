@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -14,7 +12,6 @@ import (
 	"text/template"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/template/html/v2"
 	"github.com/theleeeo/docs-server/server"
 )
@@ -22,7 +19,6 @@ import (
 const (
 	publicFilesPath = "public"
 	defaultAddress  = "localhost:4444"
-	defaultLogo     = "/favicon.ico"
 )
 
 type App struct {
@@ -32,8 +28,10 @@ type App struct {
 	serv *server.Server
 
 	files struct {
-		script string
-		style  string
+		headerImage image
+		favicon     image
+		script      string
+		style       string
 	}
 }
 
@@ -52,15 +50,19 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		serv: s,
 	}
 
-	// Load header logo
-	logo, err := getHeaderLogo(a.cfg.HeaderLogo)
+	slog.Info("loading favicon")
+	icon, err := loadImage(a.cfg.Favicon)
 	if err != nil {
 		return nil, err
 	}
+	a.files.favicon = *icon
 
-	a.fiberApp.Use(favicon.New(favicon.Config{
-		Data: logo,
-	}))
+	slog.Info("loading header image")
+	headerImage, err := loadImage(a.cfg.HeaderImage)
+	if err != nil {
+		return nil, err
+	}
+	a.files.headerImage = *headerImage
 
 	if err := a.loadScript(); err != nil {
 		return nil, err
@@ -92,6 +94,9 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func registerHandlers(a *App) {
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/header-image"), a.getHeaderImageHandler)
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/favicon.ico"), a.getFaviconHandler)
+
 	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/"), a.getIndexHandler)
 
 	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/script.js"), a.getScriptHandler)
@@ -124,43 +129,20 @@ func validateConfig(cfg *Config) error {
 
 	cfg.RootUrl = rootUrl.String()
 
-	if cfg.HeaderLogo == "" {
-		slog.Info("no header logo set, using default", "default", defaultLogo)
-		cfg.HeaderLogo = defaultLogo
+	if cfg.Favicon == "" {
+		return fmt.Errorf("favicon is required")
 	}
 
-	if !strings.HasPrefix(cfg.PathPrefix, "/") {
+	if cfg.HeaderImage == "" {
+		slog.Info("no header image set, using favicon", "favicon", cfg.Favicon)
+		cfg.HeaderImage = cfg.Favicon
+	}
+
+	if cfg.PathPrefix != "" && !strings.HasPrefix(cfg.PathPrefix, "/") {
 		cfg.PathPrefix = fmt.Sprint("/", cfg.PathPrefix)
 	}
 
 	return nil
-}
-
-func getHeaderLogo(location string) ([]byte, error) {
-	// Check if HeaderLogo is a file
-	slog.Debug("checking if HeaderLogo is a file")
-	// Prepend "public/" to the path because that's where the static files are
-	file, err := os.Open(filepath.Join(publicFilesPath, location))
-	if err == nil {
-		slog.Info("header logo loaded from file")
-		defer file.Close()
-		return io.ReadAll(file)
-	}
-	if !os.IsNotExist(err) {
-		return nil, err
-	}
-	slog.Debug("headerLogo is not a file")
-
-	// If HeaderLogo is not a file, assume it's a URL and make an HTTP request
-	slog.Debug("checking if HeaderLogo is a URL")
-	resp, err := http.Get(location)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	slog.Info("header logo loaded from URL")
-	return io.ReadAll(resp.Body)
 }
 
 func (a *App) loadScript() error {
@@ -174,8 +156,6 @@ func (a *App) loadScript() error {
 		return err
 	}
 
-	fmt.Println(a.cfg.PathPrefix)
-
 	vars := map[string]string{
 		"PathPrefix": a.cfg.PathPrefix,
 	}
@@ -186,7 +166,6 @@ func (a *App) loadScript() error {
 	}
 
 	a.files.script = buf.String()
-	fmt.Println(a.files.script)
 
 	return nil
 }
