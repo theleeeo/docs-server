@@ -22,74 +22,6 @@ const (
 	defaultLogo     = "/favicon.ico"
 )
 
-func getHeaderLogo(location string) ([]byte, error) {
-	// Check if HeaderLogo is a file
-	slog.Debug("checking if HeaderLogo is a file")
-	// Prepend "public/" to the path because that's where the static files are
-	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", location))
-	if err == nil {
-		slog.Info("header logo loaded from file")
-		defer file.Close()
-		return io.ReadAll(file)
-	}
-	if !os.IsNotExist(err) {
-		return nil, err
-	}
-	slog.Debug("headerLogo is not a file")
-
-	// If HeaderLogo is not a file, assume it's a URL and make an HTTP request
-	slog.Debug("checking if HeaderLogo is a URL")
-	resp, err := http.Get(location)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	slog.Info("header logo loaded from URL")
-	return io.ReadAll(resp.Body)
-}
-
-func registerHandlers(a *App) {
-	a.fiberApp.Get("/", a.getIndexHandler)
-
-	a.fiberApp.Get("/script.js", a.getScriptHandler)
-	a.fiberApp.Get("/style.css", a.getStyleHandler)
-
-	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
-
-	a.fiberApp.Get("/versions", a.getVersionsHandler)
-	a.fiberApp.Get("/version/:version/roles", a.getRolesHandler)
-}
-
-func validateConfig(cfg *Config) error {
-	if cfg.Address == "" {
-		slog.Info("no address set, using default", "default", defaultAddress)
-		cfg.Address = defaultAddress
-	}
-
-	if cfg.RootUrl == "" {
-		return fmt.Errorf("root url is required")
-	}
-
-	rootUrl, err := url.Parse(cfg.RootUrl)
-	if err != nil {
-		return fmt.Errorf("invalid root url: %w", err)
-	}
-	rootUrl.Scheme = "https"
-	if cfg.DocsUseHttp {
-		rootUrl.Scheme = "http"
-	}
-
-	cfg.RootUrl = rootUrl.String()
-
-	if cfg.HeaderLogo == "" {
-		slog.Info("no header logo set, using default", "default", defaultLogo)
-		cfg.HeaderLogo = defaultLogo
-	}
-
-	return nil
-}
-
 type App struct {
 	fiberApp *fiber.App
 
@@ -147,47 +79,70 @@ func (a *App) Run(ctx context.Context) error {
 	}
 }
 
-func (a App) getScriptHandler(c *fiber.Ctx) error {
-	return c.SendFile(fmt.Sprint(staticFilesPath, "/script.js"))
+func registerHandlers(a *App) {
+	a.fiberApp.Get("/", a.getIndexHandler)
+
+	a.fiberApp.Get("/script.js", a.getScriptHandler)
+	a.fiberApp.Get("/style.css", a.getStyleHandler)
+
+	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
+
+	a.fiberApp.Get("/versions", a.getVersionsHandler)
+	a.fiberApp.Get("/version/:version/roles", a.getRolesHandler)
 }
 
-func (a App) getStyleHandler(c *fiber.Ctx) error {
-	return c.SendFile(fmt.Sprint(staticFilesPath, "/style.css"))
-}
-
-func (a *App) getIndexHandler(c *fiber.Ctx) error {
-	return c.Render("version-select", fiber.Map{
-		"HeaderTitle": a.cfg.HeaderTitle,
-		"HeaderLogo":  a.cfg.HeaderLogo,
-		"Favicon":     a.cfg.Favicon,
-	}, "layouts/main")
-}
-
-func (a *App) renderDocHandler(c *fiber.Ctx) error {
-	version := c.Params("version")
-	role := c.Params("role")
-
-	return c.Render("doc", fiber.Map{
-		"RootUrl":     a.cfg.RootUrl,
-		"Path":        fmt.Sprintf("%s%s%s", a.serv.Path(), role, a.serv.FileSuffix()),
-		"Ref":         version,
-		"HeaderTitle": a.cfg.HeaderTitle,
-		"HeaderLogo":  a.cfg.HeaderLogo,
-		"Favicon":     a.cfg.Favicon,
-	}, "layouts/main")
-}
-
-func (a *App) getVersionsHandler(c *fiber.Ctx) error {
-	return c.JSON(a.serv.GetVersions())
-}
-
-func (a *App) getRolesHandler(c *fiber.Ctx) error {
-	version := c.Params("version")
-
-	doc := a.serv.GetVersion(version)
-	if doc == nil {
-		return c.Status(fiber.StatusNotFound).SendString("404 Version Not Found")
+func validateConfig(cfg *Config) error {
+	if cfg.Address == "" {
+		slog.Info("no address set, using default", "default", defaultAddress)
+		cfg.Address = defaultAddress
 	}
 
-	return c.JSON(doc.Files)
+	if cfg.RootUrl == "" {
+		return fmt.Errorf("root url is required")
+	}
+
+	rootUrl, err := url.Parse(cfg.RootUrl)
+	if err != nil {
+		return fmt.Errorf("invalid root url: %w", err)
+	}
+	rootUrl.Scheme = "https"
+	if cfg.DocsUseHttp {
+		rootUrl.Scheme = "http"
+	}
+
+	cfg.RootUrl = rootUrl.String()
+
+	if cfg.HeaderLogo == "" {
+		slog.Info("no header logo set, using default", "default", defaultLogo)
+		cfg.HeaderLogo = defaultLogo
+	}
+
+	return nil
+}
+
+func getHeaderLogo(location string) ([]byte, error) {
+	// Check if HeaderLogo is a file
+	slog.Debug("checking if HeaderLogo is a file")
+	// Prepend "public/" to the path because that's where the static files are
+	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", location))
+	if err == nil {
+		slog.Info("header logo loaded from file")
+		defer file.Close()
+		return io.ReadAll(file)
+	}
+	if !os.IsNotExist(err) {
+		return nil, err
+	}
+	slog.Debug("headerLogo is not a file")
+
+	// If HeaderLogo is not a file, assume it's a URL and make an HTTP request
+	slog.Debug("checking if HeaderLogo is a URL")
+	resp, err := http.Get(location)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	slog.Info("header logo loaded from URL")
+	return io.ReadAll(resp.Body)
 }
