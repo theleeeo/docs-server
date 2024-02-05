@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -16,8 +17,7 @@ import (
 )
 
 const (
-	// staticPath is the path to the static files
-	staticFilesPath = "./public"
+	publicFilesPath = "public"
 	defaultAddress  = "localhost:4444"
 	defaultLogo     = "/favicon.ico"
 )
@@ -124,7 +124,7 @@ func getHeaderLogo(location string) ([]byte, error) {
 	// Check if HeaderLogo is a file
 	slog.Debug("checking if HeaderLogo is a file")
 	// Prepend "public/" to the path because that's where the static files are
-	file, err := os.Open(fmt.Sprint(staticFilesPath, "/", location))
+	file, err := os.Open(filepath.Join(publicFilesPath, location))
 	if err == nil {
 		slog.Info("header logo loaded from file")
 		defer file.Close()

@@ -7,11 +7,11 @@ import (
 )
 
 func (a App) getScriptHandler(c *fiber.Ctx) error {
-	return c.SendFile(fmt.Sprint(staticFilesPath, "/script.js"))
+	return c.SendFile(fmt.Sprint(publicFilesPath, "/script.js"))
 }
 
 func (a App) getStyleHandler(c *fiber.Ctx) error {
-	return c.SendFile(fmt.Sprint(staticFilesPath, "/style.css"))
+	return c.SendFile(fmt.Sprint(publicFilesPath, "/style.css"))
 }
 
 func (a *App) getIndexHandler(c *fiber.Ctx) error {
