@@ -50,10 +50,11 @@ func getHeaderLogo(location string) ([]byte, error) {
 }
 
 func registerHandlers(a *App) {
-	// Serve static files
-	a.fiberApp.Static("/", staticFilesPath)
-
 	a.fiberApp.Get("/", a.getIndexHandler)
+
+	a.fiberApp.Get("/script.js", a.getScriptHandler)
+	a.fiberApp.Get("/style.css", a.getStyleHandler)
+
 	a.fiberApp.Get("/:version/:role", a.renderDocHandler)
 
 	a.fiberApp.Get("/versions", a.getVersionsHandler)
@@ -144,6 +145,14 @@ func (a *App) Run(ctx context.Context) error {
 	case err := <-errChan:
 		return err
 	}
+}
+
+func (a App) getScriptHandler(c *fiber.Ctx) error {
+	return c.SendFile(fmt.Sprint(staticFilesPath, "/script.js"))
+}
+
+func (a App) getStyleHandler(c *fiber.Ctx) error {
+	return c.SendFile(fmt.Sprint(staticFilesPath, "/style.css"))
 }
 
 func (a *App) getIndexHandler(c *fiber.Ctx) error {
