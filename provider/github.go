@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	"github.com/google/go-github/v58/github"
@@ -14,8 +15,10 @@ const (
 )
 
 type GithubProvider struct {
-	cfg    *GithubConfig
 	client *github.Client
+
+	cfg     *GithubConfig
+	rootUrl string
 }
 
 type GithubConfig struct {
@@ -39,20 +42,26 @@ func NewGithub(cfg *GithubConfig) (*GithubProvider, error) {
 		cfg.MaxTags = defaultMaxTags
 	}
 
+	rootUrl, err := url.Parse(fmt.Sprintf("https://raw.githubusercontent.com/%s/%s", cfg.Owner, cfg.Repo))
+	if err != nil {
+		return nil, fmt.Errorf("invalid root url: %w", err)
+	}
+
 	cl := github.NewClient(nil)
 	if cfg.AuthToken != "" {
 		cl.WithAuthToken(cfg.AuthToken)
 	}
 
 	return &GithubProvider{
-		cfg:    cfg,
-		client: cl,
+		cfg:     cfg,
+		client:  cl,
+		rootUrl: rootUrl.String(),
 	}, nil
 }
 
 // RootURL returns the url of where to get the swagger files from
 func (p *GithubProvider) RootURL() string {
-	return fmt.Sprintf("raw.githubusercontent.com/%s/%s", p.cfg.Owner, p.cfg.Repo)
+	return p.rootUrl
 }
 
 // Get the names of all tags in the repository

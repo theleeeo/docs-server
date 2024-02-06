@@ -20,6 +20,7 @@ var (
 type Provider interface {
 	ListVersions(ctx context.Context) ([]string, error)
 	ListFiles(ctx context.Context, version, path string) ([]string, error)
+	RootURL() string
 }
 
 func validateConfig(cfg *Config) error {
@@ -28,8 +29,8 @@ func validateConfig(cfg *Config) error {
 		cfg.PollInterval = defaultPollInterval
 	}
 
-	if cfg.PathPrefix != "" && !strings.HasSuffix(cfg.PathPrefix, "/") {
-		cfg.PathPrefix += "/"
+	if cfg.PathPrefix != "" {
+		cfg.PathPrefix = strings.Trim(cfg.PathPrefix, "/")
 	}
 
 	return nil
@@ -65,12 +66,8 @@ type Documentation struct {
 	Files []string
 }
 
-func (s *Server) Path() string {
-	return s.cfg.PathPrefix
-}
-
-func (s *Server) FileSuffix() string {
-	return s.cfg.FileSuffix
+func (s *Server) Path(version, role string) string {
+	return fmt.Sprint(s.provider.RootURL(), "/", version, "/", s.cfg.PathPrefix, "/", role, s.cfg.FileSuffix)
 }
 
 func (s *Server) Run(ctx context.Context) error {

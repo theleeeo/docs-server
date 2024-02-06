@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -113,21 +112,6 @@ func validateConfig(cfg *Config) error {
 		slog.Info("no address set, using default", "default", defaultAddress)
 		cfg.Address = defaultAddress
 	}
-
-	if cfg.RootUrl == "" {
-		return fmt.Errorf("root url is required")
-	}
-
-	rootUrl, err := url.Parse(cfg.RootUrl)
-	if err != nil {
-		return fmt.Errorf("invalid root url: %w", err)
-	}
-	rootUrl.Scheme = "https"
-	if cfg.DocsUseHttp {
-		rootUrl.Scheme = "http"
-	}
-
-	cfg.RootUrl = rootUrl.String()
 
 	if cfg.Favicon == "" {
 		return fmt.Errorf("favicon is required")

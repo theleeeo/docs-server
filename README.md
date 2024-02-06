@@ -60,11 +60,6 @@ server:
 app:
   # The host:port to run the server on
   address: localhosts:4444
-  # Should the app webpage fetch the swagger files using http instead of https
-  # This is useful if you are running the app locally and the swagger files are served using only http.
-  # Most browsers will however not allow a https site to fetch resources over http.
-  # The default is false, then it will use https
-  docs_use_http: false
   # An optional prefix to the path that the app listens on
   # This is useful if you are running the app behind a reverse proxy
   path_prefix: /docs

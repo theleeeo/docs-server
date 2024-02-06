@@ -19,11 +19,6 @@ import (
 	"github.com/theleeeo/leolog"
 )
 
-type appProvider interface {
-	server.Provider
-	RootURL() string
-}
-
 func parseInterval(s string) (time.Duration, error) {
 	if s == "" {
 		return 0, nil
@@ -88,8 +83,6 @@ func main() {
 
 	app, err := app.New(&app.Config{
 		Address:     cfg.App.Address,
-		DocsUseHttp: cfg.App.DocsUseHttp,
-		RootUrl:     ghClient.RootURL(),
 		HeaderTitle: cfg.Design.HeaderTitle,
 		HeaderImage: cfg.Design.HeaderImage,
 		Favicon:     cfg.Design.Favicon,
@@ -149,7 +142,7 @@ func main() {
 	wg.Wait()
 }
 
-func setupProvider(cfg *Config) (p appProvider, err error) {
+func setupProvider(cfg *Config) (p server.Provider, err error) {
 	// This pattern is possible extensibility, even if it's not used atm.
 	if cfg.Provider.Github != nil {
 		ghConfig := &provider.GithubConfig{

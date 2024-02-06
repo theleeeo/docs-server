@@ -37,9 +37,7 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 	role := c.Params("role")
 
 	return c.Render("doc", fiber.Map{
-		"RootUrl":     a.cfg.RootUrl,
-		"Path":        fmt.Sprintf("%s%s%s", a.serv.Path(), role, a.serv.FileSuffix()),
-		"Ref":         version,
+		"Path":        a.serv.Path(version, role),
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"Favicon":     a.cfg.Favicon,
 		"PathPrefix":  a.cfg.PathPrefix,
