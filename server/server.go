@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 	"sync"
 	"time"
 
@@ -19,18 +18,14 @@ var (
 
 type Provider interface {
 	ListVersions(ctx context.Context) ([]string, error)
-	ListFiles(ctx context.Context, version, path string) ([]string, error)
-	RootURL() string
+	ListFiles(ctx context.Context, version string) ([]string, error)
+	GetPath(version, file string) string
 }
 
 func validateConfig(cfg *Config) error {
 	if cfg.PollInterval == 0 {
 		slog.Info("no poll interval set, using default", "default", defaultPollInterval)
 		cfg.PollInterval = defaultPollInterval
-	}
-
-	if cfg.PathPrefix != "" {
-		cfg.PathPrefix = strings.Trim(cfg.PathPrefix, "/")
 	}
 
 	return nil
@@ -67,7 +62,8 @@ type Documentation struct {
 }
 
 func (s *Server) Path(version, role string) string {
-	return fmt.Sprint(s.provider.RootURL(), "/", version, "/", s.cfg.PathPrefix, "/", role, s.cfg.FileSuffix)
+	// return fmt.Sprint(s.provider.RootURL(), "/", version, "/", s.cfg.PathPrefix, "/", role, s.cfg.FileSuffix)
+	return s.provider.GetPath(version, role)
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -126,7 +122,7 @@ func (s *Server) Poll() error {
 }
 
 func (s *Server) FetchVersion(version string) error {
-	files, err := s.provider.ListFiles(context.Background(), version, s.cfg.PathPrefix)
+	files, err := s.provider.ListFiles(context.Background(), version)
 	if err != nil {
 		var rateLimitErr provider.RateLimitError
 		if errors.As(err, &rateLimitErr) {
@@ -134,16 +130,6 @@ func (s *Server) FetchVersion(version string) error {
 			return nil
 		}
 		return err
-	}
-
-	for i := range files {
-		f, ok := strings.CutSuffix(files[i], s.cfg.FileSuffix)
-		if !ok {
-			slog.Warn("file does not end with the suffix, skipping", "file", files[i], "version", version, "suffix", s.cfg.FileSuffix)
-			continue
-		}
-		f = strings.TrimPrefix(f, s.cfg.PathPrefix)
-		files[i] = f
 	}
 
 	s.docsRWLock.Lock()

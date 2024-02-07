@@ -12,17 +12,17 @@ type Config struct {
 
 	Provider struct {
 		Github *struct {
-			Owner     string `yaml:"owner"`
-			Repo      string `yaml:"repo"`
-			MaxTags   int    `yaml:"max_tags"`
-			AuthToken string `yaml:"auth_token"`
+			Owner      string `yaml:"owner"`
+			Repo       string `yaml:"repo"`
+			PathPrefix string `yaml:"path_prefix"`
+			FileSuffix string `yaml:"file_suffix"`
+			MaxTags    int    `yaml:"max_tags"`
+			AuthToken  string `yaml:"auth_token"`
 		} `yaml:"github"`
 	} `yaml:"provider"`
 
 	Server struct {
 		PollInterval string `yaml:"poll_interval"`
-		PathPrefix   string `yaml:"path_prefix"`
-		FileSuffix   string `yaml:"file_suffix"`
 	} `yaml:"server"`
 
 	App struct {

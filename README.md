@@ -42,6 +42,10 @@ provider:
     owner: theleo
     # The name of the repo
     repo: a-swagger-repo
+    # The path to look for swagger files in relative to the root of the repo
+    path_prefix: api/
+    # The suffix of the swagger files
+    file_suffix: .swagger.json
     # The maximum number of tags to show as versions
     max_tags: 10
     # The github token to use for the client
@@ -52,10 +56,6 @@ provider:
 server:
   # How often should the server poll the provider for new vesions
   poll_interval: 30m
-  # The path to look for swagger files in relative to the root of the repo
-  path_prefix: api/
-  # The suffix of the swagger files
-  file_suffix: .swagger.json
 
 app:
   # The host:port to run the server on

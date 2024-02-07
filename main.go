@@ -146,10 +146,12 @@ func setupProvider(cfg *Config) (p server.Provider, err error) {
 	// This pattern is possible extensibility, even if it's not used atm.
 	if cfg.Provider.Github != nil {
 		ghConfig := &provider.GithubConfig{
-			Owner:     cfg.Provider.Github.Owner,
-			Repo:      cfg.Provider.Github.Repo,
-			MaxTags:   cfg.Provider.Github.MaxTags,
-			AuthToken: cfg.Provider.Github.AuthToken,
+			Owner:      cfg.Provider.Github.Owner,
+			Repo:       cfg.Provider.Github.Repo,
+			PathPrefix: cfg.Provider.Github.PathPrefix,
+			FileSuffix: cfg.Provider.Github.FileSuffix,
+			MaxTags:    cfg.Provider.Github.MaxTags,
+			AuthToken:  cfg.Provider.Github.AuthToken,
 		}
 
 		p, err = provider.NewGithub(ghConfig)
@@ -166,15 +168,14 @@ func setupProvider(cfg *Config) (p server.Provider, err error) {
 }
 
 func setupServer(cfg *Config, p server.Provider) (s *server.Server, err error) {
-	serverConfig := &server.Config{
-		PathPrefix: cfg.Server.PathPrefix,
-		FileSuffix: cfg.Server.FileSuffix,
-	}
 	interval, err := parseInterval(cfg.Server.PollInterval)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse poll interval: %w", err)
 	}
-	serverConfig.PollInterval = interval
+
+	serverConfig := &server.Config{
+		PollInterval: interval,
+	}
 
 	s, err = server.New(serverConfig, p)
 	if err != nil {
