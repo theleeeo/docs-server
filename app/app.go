@@ -27,8 +27,8 @@ type App struct {
 	serv *server.Server
 
 	files struct {
-		headerImage image
-		favicon     image
+		headerImage *image
+		favicon     *image
 		script      string
 		style       string
 	}
@@ -49,19 +49,23 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		serv: s,
 	}
 
-	slog.Info("loading favicon")
-	icon, err := loadImage(a.cfg.Favicon)
-	if err != nil {
-		return nil, err
+	if cfg.Favicon != "" {
+		slog.Info("loading favicon")
+		icon, err := loadImage(a.cfg.Favicon)
+		if err != nil {
+			return nil, err
+		}
+		a.files.favicon = icon
 	}
-	a.files.favicon = *icon
 
-	slog.Info("loading header image")
-	headerImage, err := loadImage(a.cfg.HeaderImage)
-	if err != nil {
-		return nil, err
+	if cfg.HeaderImage != "" {
+		slog.Info("loading header image")
+		headerImage, err := loadImage(a.cfg.HeaderImage)
+		if err != nil {
+			return nil, err
+		}
+		a.files.headerImage = headerImage
 	}
-	a.files.headerImage = *headerImage
 
 	if err := a.loadScript(); err != nil {
 		return nil, err
@@ -120,12 +124,11 @@ func validateConfig(cfg *Config) error {
 	}
 
 	if cfg.Favicon == "" {
-		return fmt.Errorf("favicon is required")
+		slog.Info("no favicon set")
 	}
 
 	if cfg.HeaderImage == "" {
-		slog.Info("no header image set, using favicon", "favicon", cfg.Favicon)
-		cfg.HeaderImage = cfg.Favicon
+		slog.Info("no header image set")
 	}
 
 	if cfg.PathPrefix != "" && !strings.HasPrefix(cfg.PathPrefix, "/") {

@@ -72,7 +72,6 @@ design:
   header_name: Leo Evil Inc'
   # A filepath or url to the logo that will be shown in the header
   # Files should be placed in the ./public folder
-  # If left empty, the favicon will be used
   header_image: https://theleo.se/favicon.png
   # The color of the header
   # Allowed values are any valid css color (hex, rgb, named colors, etc.)

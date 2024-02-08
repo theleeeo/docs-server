@@ -1,8 +1,12 @@
 <header>
+    {{ if .HasImage }}
     <a href="{{ .PathPrefix }}/">
         <img src="{{ .PathPrefix }}/header-image" alt="header image">
     </a>
+    {{ end }}
+    {{ if .HasTitle }}
     <a href="{{ .PathPrefix }}/">
         <h1>{{ .HeaderTitle }}</h1>
     </a>
+    {{ end }}
 </header>

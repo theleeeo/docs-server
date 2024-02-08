@@ -10,11 +10,17 @@ import (
 )
 
 func (a *App) getHeaderImageHandler(c *fiber.Ctx) error {
+	if a.files.headerImage == nil {
+		return c.Status(fiber.StatusNotFound).SendString("404 Not Found")
+	}
 	c.Set(fiber.HeaderContentType, a.files.headerImage.contentType)
 	return c.Send(a.files.headerImage.data)
 }
 
 func (a *App) getFaviconHandler(c *fiber.Ctx) error {
+	if a.files.favicon == nil {
+		return c.Status(fiber.StatusNotFound).SendString("404 Not Found")
+	}
 	c.Set(fiber.HeaderContentType, a.files.favicon.contentType)
 	return c.Send(a.files.favicon.data)
 }
@@ -34,6 +40,8 @@ func (a *App) getIndexHandler(c *fiber.Ctx) error {
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"Favicon":     a.cfg.Favicon,
 		"PathPrefix":  a.cfg.PathPrefix,
+		"HasTitle":    a.cfg.HeaderTitle != "",
+		"HasImage":    a.cfg.HeaderImage != "",
 	}, "layouts/main")
 }
 
@@ -49,10 +57,12 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Render("doc", fiber.Map{
-		"Path":        path,
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"Favicon":     a.cfg.Favicon,
 		"PathPrefix":  a.cfg.PathPrefix,
+		"HasTitle":    a.cfg.HeaderTitle != "",
+		"HasImage":    a.cfg.HeaderImage != "",
+		"Path":        path,
 	}, "layouts/main")
 }
 
