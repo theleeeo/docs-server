@@ -23,6 +23,7 @@ type Config struct {
 
 	Server struct {
 		PollInterval string `yaml:"poll_interval"`
+		Proxy        bool   `yaml:"proxy"`
 	} `yaml:"server"`
 
 	App struct {

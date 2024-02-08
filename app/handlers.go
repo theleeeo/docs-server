@@ -1,9 +1,12 @@
 package app
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/theleeeo/docs-server/server"
 )
 
 func (a *App) getHeaderImageHandler(c *fiber.Ctx) error {
@@ -36,8 +39,15 @@ func (a *App) renderDocHandler(c *fiber.Ctx) error {
 	version := c.Params("version")
 	role := c.Params("role")
 
+	var path string
+	if a.serv.ProxyEnabled() {
+		path = fmt.Sprint(a.cfg.PathPrefix, "/proxy/", version, "/", role)
+	} else {
+		path = a.serv.Path(version, role)
+	}
+
 	return c.Render("doc", fiber.Map{
-		"Path":        a.serv.Path(version, role),
+		"Path":        path,
 		"HeaderTitle": a.cfg.HeaderTitle,
 		"Favicon":     a.cfg.Favicon,
 		"PathPrefix":  a.cfg.PathPrefix,
@@ -57,4 +67,25 @@ func (a *App) getRolesHandler(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(doc.Files)
+}
+
+func (a *App) proxyHandler(c *fiber.Ctx) error {
+	if !a.serv.ProxyEnabled() {
+		return c.Status(fiber.StatusNotFound).SendString("404 Not Found")
+	}
+
+	version := c.Params("version")
+	file := c.Params("file")
+
+	data, err := a.serv.GetFile(c.Context(), version, file)
+	if err != nil {
+		if errors.Is(err, server.ErrNotFound) {
+			return c.Status(fiber.StatusNotFound).SendString("404 Not Found")
+		}
+
+		slog.Error("failed to get file from proxy", "error", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("An error occurred, please try again later.")
+	}
+
+	return c.Send(data)
 }

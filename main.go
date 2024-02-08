@@ -102,8 +102,8 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		if err := app.Run(ctx); err != nil {
@@ -111,8 +111,8 @@ func main() {
 		}
 	}()
 
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		if err := s.Run(ctx); err != nil {
@@ -175,6 +175,7 @@ func setupServer(cfg *Config, p server.Provider) (s *server.Server, err error) {
 
 	serverConfig := &server.Config{
 		PollInterval: interval,
+		Proxy:        cfg.Server.Proxy,
 	}
 
 	s, err = server.New(serverConfig, p)

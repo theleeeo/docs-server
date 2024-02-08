@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/theleeeo/docs-server/cache"
 	"github.com/theleeeo/docs-server/provider"
 )
 
@@ -16,10 +17,15 @@ var (
 	defaultPollInterval = 15 * time.Minute
 )
 
+var (
+	ErrNotFound = fmt.Errorf("not found")
+)
+
 type Provider interface {
 	ListVersions(ctx context.Context) ([]string, error)
 	ListFiles(ctx context.Context, version string) ([]string, error)
 	GetPath(version, file string) string
+	DownloadFile(ctx context.Context, version, file string) ([]byte, error)
 }
 
 func validateConfig(cfg *Config) error {
@@ -41,11 +47,17 @@ func New(cfg *Config, provider Provider) (*Server, error) {
 		cfg:      cfg,
 	}
 
+	if cfg.Proxy {
+		slog.Info("using proxy for caching files")
+		s.cache = cache.New()
+	}
+
 	return s, nil
 }
 
 type Server struct {
 	provider Provider
+	cache    *cache.Cache
 
 	cfg *Config
 
@@ -62,8 +74,38 @@ type Documentation struct {
 }
 
 func (s *Server) Path(version, role string) string {
-	// return fmt.Sprint(s.provider.RootURL(), "/", version, "/", s.cfg.PathPrefix, "/", role, s.cfg.FileSuffix)
 	return s.provider.GetPath(version, role)
+}
+
+func (s *Server) ProxyEnabled() bool {
+	return s.cfg.Proxy
+}
+
+func (s *Server) GetFile(ctx context.Context, version, file string) ([]byte, error) {
+	data, err := s.cache.Get(version, file)
+	if err != nil {
+		return nil, err
+	}
+	if data != nil {
+		return data, nil
+	}
+
+	data, err = s.provider.DownloadFile(ctx, version, file)
+	if err != nil {
+		if errors.Is(err, provider.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	if s.cfg.Proxy {
+		err := s.cache.Set(version, file, data)
+		if err != nil {
+			slog.Warn("failed to save file to disk", "error", err)
+		}
+	}
+
+	return data, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {

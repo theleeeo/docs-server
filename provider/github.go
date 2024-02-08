@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -12,6 +13,10 @@ import (
 
 const (
 	defaultMaxTags = 10
+)
+
+var (
+	ErrNotFound = fmt.Errorf("not found")
 )
 
 type GithubProvider struct {
@@ -109,6 +114,27 @@ func (p *GithubProvider) ListFiles(ctx context.Context, version string) ([]strin
 
 func (p *GithubProvider) GetPath(version, file string) string {
 	return fmt.Sprint(p.rootUrl, "/", version, "/", p.cfg.PathPrefix, "/", file, p.cfg.FileSuffix)
+}
+
+func (p *GithubProvider) DownloadFile(ctx context.Context, version, file string) ([]byte, error) {
+	path := fmt.Sprint(p.cfg.PathPrefix, "/", file, p.cfg.FileSuffix)
+	content, resp, err := p.client.Repositories.DownloadContents(ctx, p.cfg.Owner, p.cfg.Repo, path, &github.RepositoryContentGetOptions{Ref: version})
+	if err != nil {
+		if strings.Contains(err.Error(), "No commit found") {
+			return nil, fmt.Errorf("%w: version=%s", ErrNotFound, version)
+		}
+		if strings.Contains(err.Error(), "no file named") {
+			return nil, fmt.Errorf("%w: file=%s", ErrNotFound, file)
+		}
+		return nil, handleError(err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	defer content.Close()
+	return io.ReadAll(content)
 }
 
 func handleError(err error) error {

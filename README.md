@@ -56,6 +56,9 @@ provider:
 server:
   # How often should the server poll the provider for new vesions
   poll_interval: 30m
+  # Should the server act as a proxy, fecthing the swagger files from the provider and serving them
+  # This is useful if the provider is not accessible from the internet or requires authentication
+  proxy: false
 
 app:
   # The host:port to run the server on

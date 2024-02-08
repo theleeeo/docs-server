@@ -105,6 +105,8 @@ func registerHandlers(a *App) {
 
 	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/versions"), a.getVersionsHandler)
 	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/version/:version/roles"), a.getRolesHandler)
+
+	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/proxy/:version/:file"), a.proxyHandler)
 }
 
 func validateConfig(cfg *Config) error {
