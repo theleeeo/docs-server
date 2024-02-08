@@ -20,11 +20,13 @@ func (a *App) getFaviconHandler(c *fiber.Ctx) error {
 }
 
 func (a *App) getScriptHandler(c *fiber.Ctx) error {
+	c.Set(fiber.HeaderContentType, "application/javascript")
 	return c.SendString(string(a.files.script))
 }
 
 func (a *App) getStyleHandler(c *fiber.Ctx) error {
-	return c.SendFile(fmt.Sprint(publicFilesPath, "/style.css"))
+	c.Set(fiber.HeaderContentType, "text/css")
+	return c.SendString(string(a.files.style))
 }
 
 func (a *App) getIndexHandler(c *fiber.Ctx) error {

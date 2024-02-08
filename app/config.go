@@ -5,6 +5,7 @@ type Config struct {
 
 	HeaderTitle string
 	HeaderImage string
+	HeaderColor string
 	Favicon     string
 
 	PathPrefix string

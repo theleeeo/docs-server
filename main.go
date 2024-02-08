@@ -85,6 +85,7 @@ func main() {
 		Address:     cfg.App.Address,
 		HeaderTitle: cfg.Design.HeaderTitle,
 		HeaderImage: cfg.Design.HeaderImage,
+		HeaderColor: cfg.Design.HeaderColor,
 		Favicon:     cfg.Design.Favicon,
 		PathPrefix:  cfg.App.PathPrefix,
 	}, s)

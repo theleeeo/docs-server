@@ -34,6 +34,7 @@ type Config struct {
 	Design struct {
 		HeaderTitle string `yaml:"header_name"`
 		HeaderImage string `yaml:"header_image"`
+		HeaderColor string `yaml:"header_color"`
 		Favicon     string `yaml:"favicon"`
 	} `yaml:"design"`
 }

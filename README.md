@@ -74,6 +74,10 @@ design:
   # Files should be placed in the ./public folder
   # If left empty, the favicon will be used
   header_image: https://theleo.se/favicon.png
+  # The color of the header
+  # Allowed values are any valid css color (hex, rgb, named colors, etc.)
+  # Default is the color of the website background
+  header_color: "#000000"
   # The filepath or url to the icon that will be shown in the browser tab
   # Files should be placed in the ./public folder
   favicon: https://theleo.se/favicon.png

@@ -67,6 +67,10 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		return nil, err
 	}
 
+	if err := a.loadStyle(); err != nil {
+		return nil, err
+	}
+
 	registerHandlers(a)
 
 	return a, nil
@@ -128,6 +132,10 @@ func validateConfig(cfg *Config) error {
 		cfg.PathPrefix = fmt.Sprint("/", cfg.PathPrefix)
 	}
 
+	if cfg.HeaderColor == "" {
+		cfg.HeaderColor = "none"
+	}
+
 	return nil
 }
 
@@ -152,6 +160,31 @@ func (a *App) loadScript() error {
 	}
 
 	a.files.script = buf.String()
+
+	return nil
+}
+
+func (a *App) loadStyle() error {
+	b, err := os.ReadFile(filepath.Join(publicFilesPath, "style.css"))
+	if err != nil {
+		return err
+	}
+
+	t, err := template.New("style").Parse(string(b))
+	if err != nil {
+		return err
+	}
+
+	vars := map[string]string{
+		"HeaderColor": a.cfg.HeaderColor,
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, vars); err != nil {
+		return err
+	}
+
+	a.files.style = buf.String()
 
 	return nil
 }
