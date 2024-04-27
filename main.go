@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/theleeeo/docs-server/app"
 	"github.com/theleeeo/docs-server/provider"
 	"github.com/theleeeo/docs-server/server"
@@ -66,16 +65,15 @@ func main() {
 	}
 
 	logger := slog.New(leolog.NewHandler(&slog.HandlerOptions{Level: logLevel}))
-	log.SetLevel(log.LevelDebug)
 	slog.SetDefault(logger)
 
-	ghClient, err := setupProvider(cfg)
+	providerClient, err := setupProvider(cfg)
 	if err != nil {
 		color.Red("failed to setup provider: %s", err)
 		return
 	}
 
-	s, err := setupServer(cfg, ghClient)
+	s, err := setupServer(cfg, providerClient)
 	if err != nil {
 		color.Red("failed to setup server: %s", err)
 		return
