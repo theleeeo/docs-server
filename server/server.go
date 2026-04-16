@@ -62,7 +62,7 @@ type Server struct {
 	cfg *Config
 
 	docsRWLock sync.RWMutex
-	// The dicumentation files and their versions that are available
+	// The documentation files and their versions that are available
 	docs []*Documentation
 }
 
@@ -82,6 +82,7 @@ func (s *Server) ProxyEnabled() bool {
 }
 
 func (s *Server) GetFile(ctx context.Context, version, file string) ([]byte, error) {
+	// TODO: Why even try to get from cache if proxy is disabled?
 	data, err := s.cache.Get(version, file)
 	if err != nil {
 		return nil, err

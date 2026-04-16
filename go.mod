@@ -1,6 +1,6 @@
 module github.com/theleeeo/docs-server
 
-go 1.21.3
+go 1.25
 
 require (
 	github.com/fatih/color v1.16.0

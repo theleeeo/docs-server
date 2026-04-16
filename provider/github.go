@@ -27,8 +27,9 @@ type GithubProvider struct {
 }
 
 type GithubConfig struct {
-	Owner      string
-	Repo       string
+	Owner string
+	Repo  string
+	// TODO: Verify that an empty PathPrefix works as expected
 	PathPrefix string
 	FileSuffix string
 	MaxTags    int

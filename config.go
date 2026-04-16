@@ -19,6 +19,9 @@ type Config struct {
 			MaxTags    int    `yaml:"max_tags"`
 			AuthToken  string `yaml:"auth_token"`
 		} `yaml:"github"`
+		File *struct {
+			FilePath string `yaml:"file_path"`
+		} `yaml:"file"`
 	} `yaml:"provider"`
 
 	Server struct {

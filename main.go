@@ -1,5 +1,14 @@
 package main
 
+// TODOs:
+// - Handle a 404 better
+// - Tests, ofc
+// - Admin endpoints?
+// - File provider
+// - STD lib instead of fiber
+// - Do not crach on an api error. Log and move on
+// /TODO:
+
 import (
 	"context"
 	"fmt"
@@ -154,6 +163,15 @@ func setupProvider(cfg *Config) (p server.Provider, err error) {
 		}
 
 		p, err = provider.NewGithub(ghConfig)
+		if err != nil {
+			return nil, err
+		}
+	} else if cfg.Provider.File != nil {
+		fileConfig := &provider.FileConfig{
+			FilePath: cfg.Provider.File.FilePath,
+		}
+
+		p, err = provider.NewFileProvider(fileConfig)
 		if err != nil {
 			return nil, err
 		}

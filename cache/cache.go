@@ -2,6 +2,7 @@ package cache
 
 import "fmt"
 
+// TODO: Cache eviction
 type Cache struct {
 	cache map[string][]byte
 }
