@@ -109,50 +109,42 @@ func (s *Server) GetFile(ctx context.Context, version, file string) ([]byte, err
 	return data, nil
 }
 
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context) {
 	slog.Info("starting server")
 
-	if err := s.Poll(); err != nil {
-		return err
+	if err := s.Poll(ctx); err != nil {
+		slog.Error("initial poll failed, will retry on next cycle", "error", err)
 	}
 
-	errChan := make(chan error, 1)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				errChan <- nil
-				return
-			case <-time.After(s.cfg.PollInterval):
-				if err := s.Poll(); err != nil {
-					errChan <- err
-					return
-				}
+	ticker := time.NewTicker(s.cfg.PollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := s.Poll(ctx); err != nil {
+				slog.Error("poll failed, will retry on next cycle", "error", err)
 			}
 		}
-	}()
-
-	return <-errChan
+	}
 }
 
 // Poll polls the provider for new versions and files.
-func (s *Server) Poll() error {
-	versions, err := s.provider.ListVersions(context.Background())
+func (s *Server) Poll(ctx context.Context) error {
+	versions, err := s.provider.ListVersions(ctx)
 	if err != nil {
-		var rateLimitErr provider.RateLimitError
-		if errors.As(err, &rateLimitErr) {
-			slog.Warn("rate limit reached, skipping poll", rateLimitErr.KVs()...)
-			return nil
-		}
-		return err
+		return fmt.Errorf("failed to list versions: %w", err)
 	}
 
 	newVersions, removedVersions := s.calculateVersionDiffs(versions)
 
 	for _, version := range newVersions {
 		slog.Info("found new version", "version", version)
-		if err := s.FetchVersion(version); err != nil {
-			return err
+		if err := s.FetchVersion(ctx, version); err != nil {
+			slog.Error("failed to fetch version, skipping", "version", version, "error", err)
+			continue
 		}
 	}
 
@@ -164,14 +156,9 @@ func (s *Server) Poll() error {
 	return nil
 }
 
-func (s *Server) FetchVersion(version string) error {
-	files, err := s.provider.ListFiles(context.Background(), version)
+func (s *Server) FetchVersion(ctx context.Context, version string) error {
+	files, err := s.provider.ListFiles(ctx, version)
 	if err != nil {
-		var rateLimitErr provider.RateLimitError
-		if errors.As(err, &rateLimitErr) {
-			slog.Warn("rate limit reached, skipping poll", rateLimitErr.KVs()...)
-			return nil
-		}
 		return err
 	}
 

@@ -104,7 +104,6 @@ func main() {
 	var termChan = make(chan os.Signal, 1)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
 	var appErrChan = make(chan error, 1)
-	var serverErrChan = make(chan error, 1)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -123,9 +122,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		if err := s.Run(ctx); err != nil {
-			serverErrChan <- err
-		}
+		s.Run(ctx)
 	}()
 
 	select {
@@ -141,9 +138,6 @@ func main() {
 		cancel()
 	case err := <-appErrChan:
 		slog.Error("the app encountered an error", "error", err.Error())
-		cancel()
-	case err := <-serverErrChan:
-		slog.Error("the server encountered an error", "error", err.Error())
 		cancel()
 	}
 
