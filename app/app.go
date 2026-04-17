@@ -3,15 +3,16 @@ package app
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
+	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html/v2"
 	"github.com/theleeeo/docs-server/server"
 )
 
@@ -21,7 +22,8 @@ const (
 )
 
 type App struct {
-	fiberApp *fiber.App
+	httpServer *http.Server
+	templates  map[string]*template.Template
 
 	cfg  *Config
 	serv *server.Server
@@ -40,13 +42,9 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 	}
 
 	a := &App{
-		fiberApp: fiber.New(fiber.Config{
-			Views:   html.New("./views", ".html"),
-			GETOnly: true,
-		}),
-
-		cfg:  cfg,
-		serv: s,
+		templates: make(map[string]*template.Template),
+		cfg:       cfg,
+		serv:      s,
 	}
 
 	if cfg.Favicon != "" {
@@ -75,46 +73,69 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		return nil, err
 	}
 
-	registerHandlers(a)
+	if err := a.loadTemplates(); err != nil {
+		return nil, err
+	}
+
+	mux := http.NewServeMux()
+	registerHandlers(mux, a)
+
+	a.httpServer = &http.Server{
+		Addr:    a.cfg.Address,
+		Handler: mux,
+	}
 
 	return a, nil
 }
 
 func (a *App) Run(ctx context.Context) error {
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
+		defer close(errChan)
+
 		slog.Info("starting app", "addr", a.cfg.Address)
-		if err := a.fiberApp.Listen(a.cfg.Address); err != nil {
+		if err := a.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errChan <- err
 		}
 	}()
 
 	select {
 	case <-ctx.Done():
-		if err := a.fiberApp.Shutdown(); err != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
 			slog.Error("failed to shutdown app", "error", err)
 		}
+
+		if err, ok := <-errChan; ok && err != nil {
+			return err
+		}
+
 		return nil
-	case err := <-errChan:
+	case err, ok := <-errChan:
+		if !ok {
+			return nil
+		}
+
 		return err
 	}
 }
 
-func registerHandlers(a *App) {
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/header-image"), a.getHeaderImageHandler)
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/favicon.ico"), a.getFaviconHandler)
+func registerHandlers(mux *http.ServeMux, a *App) {
+	if a.cfg.PathPrefix != "" {
+		mux.HandleFunc("GET "+a.cfg.PathPrefix, a.redirectToRootHandler)
+	}
 
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/"), a.getIndexHandler)
-
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/script.js"), a.getScriptHandler)
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/style.css"), a.getStyleHandler)
-
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/:version/:role"), a.renderDocHandler)
-
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/versions"), a.getVersionsHandler)
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/version/:version/roles"), a.getRolesHandler)
-
-	a.fiberApp.Get(fmt.Sprint(a.cfg.PathPrefix, "/proxy/:version/:file"), a.proxyHandler)
+	mux.HandleFunc("GET "+a.route("/header-image"), a.getHeaderImageHandler)
+	mux.HandleFunc("GET "+a.route("/favicon.ico"), a.getFaviconHandler)
+	mux.HandleFunc("GET "+a.rootRoute(), a.getIndexHandler)
+	mux.HandleFunc("GET "+a.route("/script.js"), a.getScriptHandler)
+	mux.HandleFunc("GET "+a.route("/style.css"), a.getStyleHandler)
+	mux.HandleFunc("GET "+a.route("/versions"), a.getVersionsHandler)
+	mux.HandleFunc("GET "+a.route("/version/{version}/roles"), a.getRolesHandler)
+	mux.HandleFunc("GET "+a.route("/{version}/{role...}"), a.renderDocHandler)
+	mux.HandleFunc("GET "+a.route("/proxy/{version}/{file...}"), a.proxyHandler)
 }
 
 func validateConfig(cfg *Config) error {
@@ -134,6 +155,7 @@ func validateConfig(cfg *Config) error {
 	if cfg.PathPrefix != "" && !strings.HasPrefix(cfg.PathPrefix, "/") {
 		cfg.PathPrefix = fmt.Sprint("/", cfg.PathPrefix)
 	}
+	cfg.PathPrefix = strings.TrimRight(cfg.PathPrefix, "/")
 
 	if cfg.HeaderColor == "" {
 		cfg.HeaderColor = "none"
@@ -190,4 +212,42 @@ func (a *App) loadStyle() error {
 	a.files.style = buf.String()
 
 	return nil
+}
+
+func (a *App) loadTemplates() error {
+	pages := map[string]string{
+		"version-select": filepath.Join("views", "version-select.html"),
+		"doc":            filepath.Join("views", "doc.html"),
+	}
+
+	for name, page := range pages {
+		t, err := template.ParseFiles(
+			filepath.Join("views", "layouts", "main.html"),
+			filepath.Join("views", "partials", "header.html"),
+			page,
+		)
+		if err != nil {
+			return err
+		}
+
+		a.templates[name] = t
+	}
+
+	return nil
+}
+
+func (a *App) route(path string) string {
+	if a.cfg.PathPrefix == "" {
+		return path
+	}
+
+	return a.cfg.PathPrefix + path
+}
+
+func (a *App) rootRoute() string {
+	if a.cfg.PathPrefix == "" {
+		return "/{$}"
+	}
+
+	return a.cfg.PathPrefix + "/{$}"
 }
