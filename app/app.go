@@ -28,6 +28,9 @@ type App struct {
 	cfg  *Config
 	serv *server.Server
 
+	// headerImageSrc is the src of the header image as the webpage loads it
+	headerImageSrc string
+
 	files struct {
 		headerImage *image
 		favicon     *image
@@ -56,13 +59,17 @@ func New(cfg *Config, s *server.Server) (*App, error) {
 		a.files.favicon = icon
 	}
 
-	if cfg.HeaderImage != "" {
+	if isURL(cfg.HeaderImage) {
+		// The webpage loads the image from the URL directly
+		a.headerImageSrc = cfg.HeaderImage
+	} else if cfg.HeaderImage != "" {
 		slog.Info("loading header image")
-		headerImage, err := loadImage(a.cfg.HeaderImage)
+		headerImage, err := loadImageFile(a.cfg.HeaderImage)
 		if err != nil {
 			return nil, err
 		}
 		a.files.headerImage = headerImage
+		a.headerImageSrc = a.route("/header-image")
 	}
 
 	if err := a.loadScript(); err != nil {

@@ -1,8 +1,8 @@
 {{define "partials/header"}}
 <header>
-    {{ if .HasImage }}
+    {{ if .HeaderImage }}
     <a href="{{ .PathPrefix }}/">
-        <img src="{{ .PathPrefix }}/header-image" alt="header image">
+        <img src="{{ .HeaderImage }}" alt="header image">
     </a>
     {{ end }}
     {{ if .HasTitle }}

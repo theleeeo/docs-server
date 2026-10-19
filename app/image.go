@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 )
@@ -53,4 +54,26 @@ func loadImage(location string) (*image, error) {
 		data:        b,
 		contentType: resp.Header.Get("Content-Type"),
 	}, nil
+}
+
+// loadImageFile loads an image from the public folder
+func loadImageFile(location string) (*image, error) {
+	b, err := os.ReadFile(filepath.Join(publicFilesPath, location))
+	if err != nil {
+		return nil, err
+	}
+
+	return &image{
+		data:        b,
+		contentType: http.DetectContentType(b),
+	}, nil
+}
+
+func isURL(location string) bool {
+	u, err := url.Parse(location)
+	if err != nil {
+		return false
+	}
+
+	return (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }

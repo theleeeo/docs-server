@@ -46,7 +46,7 @@ func (a *App) getIndexHandler(w http.ResponseWriter, r *http.Request) {
 		"Favicon":     a.cfg.Favicon,
 		"PathPrefix":  a.cfg.PathPrefix,
 		"HasTitle":    a.cfg.HeaderTitle != "",
-		"HasImage":    a.cfg.HeaderImage != "",
+		"HeaderImage": a.headerImageSrc,
 	})
 }
 
@@ -66,7 +66,7 @@ func (a *App) renderDocHandler(w http.ResponseWriter, r *http.Request) {
 		"Favicon":     a.cfg.Favicon,
 		"PathPrefix":  a.cfg.PathPrefix,
 		"HasTitle":    a.cfg.HeaderTitle != "",
-		"HasImage":    a.cfg.HeaderImage != "",
+		"HeaderImage": a.headerImageSrc,
 		"Path":        path,
 	})
 }
